@@ -10,6 +10,8 @@
 #       wheels/ requirements.txt  the hub's Python packages and all their dependencies
 #       node.tar.xz               Node.js (latest 22.x LTS, checked against nodejs.org's SHASUMS)
 #       configurable-http-proxy.tar.gz   JupyterHub's proxy, installed with that Node.js
+#       debs/                     conntrack and the libraries it needs that the base image
+#                                 lacks (for the network log, the "netlog" service of JupyDo)
 #
 # Each folder gets manifest.txt (versions), SHA256SUMS and .complete. Run on the machine
 # that makes the vendor bundles (Docker + QEMU for the other architecture, see
@@ -108,11 +110,22 @@ for arch in "${ARCHS[@]}"; do
             tar -czf /out/configurable-http-proxy.tar.gz -C /tmp/chp .
             /tmp/chp/bin/configurable-http-proxy --version > /out/chp-version.txt'
 
+    echo "  conntrack (Debian packages of the base image's release)"
+    mkdir -p "$dir/debs"
+    docker run --rm --platform "linux/$arch" -v "$PWD/$dir:/out" jupydo-hub-base:vendored sh -ec '
+        apt-get update -qq
+        mkdir -p /tmp/debs/partial
+        apt-get install -y -qq --download-only --no-install-recommends -o Dir::Cache::archives=/tmp/debs conntrack
+        cp /tmp/debs/*.deb /out/debs/
+        chown -R '"$(id -u):$(id -g)"' /out/debs'
+
     {
         echo "# JupyDo hub ($arch): vendored by scripts/make-vendor-hub.sh on $(date -u +%F)"
         echo "base $digest (image $(docker image inspect --format "{{.Id}}" jupydo-hub-base:vendored))"
         echo "node $NODE_VERSION"
         echo "configurable-http-proxy $(cat "$dir/chp-version.txt")"
+        echo "# Debian packages:"
+        (cd "$dir/debs" && ls *.deb)
         echo "# Python packages:"
         (cd "$dir/wheels" && ls *.whl)
     } > "$dir/manifest.txt"
