@@ -1,0 +1,3 @@
+# Python packages the IGV module adds to JupyDo's JupyterLab (/opt/python4Jup):
+# the proxy that shows the IGV server in a JupyterLab tab (launcher icon).
+jupyter-server-proxy

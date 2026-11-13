@@ -1,0 +1,27 @@
+# Converts a minimal image whose software is a conda environment in /usr/local
+# (BioContainers images: BusyBox + glibc base, no package manager) into an image
+# with the same /usr/local on the vendored Debian 12 base, so that the usual JupyDo
+# build (Dockerfile) can run on it. Offline: both images are already local.
+# Built by scripts/build-image.sh (and by JupyDo), which appends the ENV lines of
+# the original image (PATH and the variables its tools need).
+ARG TOOL_IMAGE
+ARG CONVERT_BASE
+FROM ${TOOL_IMAGE} AS tool
+FROM ${CONVERT_BASE}
+# Debian's /usr/local holds only empty folders and the link man -> share/man, which
+# would clash with the tool's real man folder: start from an empty /usr/local
+RUN rm -rf /usr/local/*
+COPY --from=tool /usr/local /usr/local
+# The tool's conda libraries (e.g. an older liblzma) must not replace Debian's for
+# Debian's own programs: Debian lists /usr/local/lib among the system library paths,
+# so the first ldconfig would make dpkg, apt and the rest load conda's copies and
+# break. Conda programs find their libraries through their own RPATH and do not
+# need it: /usr/local/lib is removed from the system paths. Debian's file that lists
+# it (libc.conf, of libc-bin) is moved aside with dpkg-divert: an update of libc-bin
+# later in the build (an image older than the bundle is brought forward) writes its
+# own copy to the diverted name, which is not read, instead of putting the line back
+# (it did: dbus-uuidgen then loaded conda's libdbus and the Desktop module failed).
+RUN if [ -f /etc/ld.so.conf.d/libc.conf ]; then \
+      dpkg-divert --local --rename --divert /etc/ld.so.conf.d/libc.conf.jupydo-off \
+        --add /etc/ld.so.conf.d/libc.conf; fi \
+ && sed -i '\#^/usr/local/lib#d' /etc/ld.so.conf /etc/ld.so.conf.d/*.conf && ldconfig

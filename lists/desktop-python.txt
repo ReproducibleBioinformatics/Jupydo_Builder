@@ -1,0 +1,4 @@
+# Python packages the Desktop module adds to JupyDo's JupyterLab (/opt/python4Jup):
+# the launcher icon and the proxy that starts the desktop as the user.
+jupyter-remote-desktop-proxy
+jupyter-server-proxy

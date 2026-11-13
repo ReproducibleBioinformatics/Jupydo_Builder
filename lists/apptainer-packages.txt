@@ -1,0 +1,17 @@
+# Apptainer module: system packages it needs at run time. They are downloaded into
+# the Apptainer bundle itself (vendor/apptainer/<key>/debs, with their complete
+# dependency closure), so the base apt bundle never changes for a module.
+# Checked against the libraries the programs really use (runtime-packages.txt).
+# Syntax as the apt lists: "a|b" = first available, "?pkg" = optional.
+uidmap
+fakeroot
+fuse3
+libfuse3-3|libfuse3-4
+libseccomp2
+liblzo2-2
+liblz4-1|liblz4-1t64
+libtalloc2
+libprotobuf-c1
+liblzma5
+libzstd1
+zlib1g

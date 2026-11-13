@@ -1,0 +1,4 @@
+# Python packages the RStudio module adds to JupyDo's JupyterLab (/opt/python4Jup):
+# the launcher icon and the proxy that starts RStudio Server as the user, behind the
+# JupyterLab login. Downloaded as wheels into each RStudio bundle (offline install).
+jupyter-rsession-proxy

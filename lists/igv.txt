@@ -1,0 +1,9 @@
+# IGV module: the IGV-Web app (igv.org, MIT licence), a genome browser made only of
+# static files, opened from the JupyterLab launcher. The same zip for every platform
+# and architecture (https://igv.org/app-archive). It is served by a small server run
+# with JupyDo's own Python (modules/igv-serve.py), which also lets IGV read the
+# environment's files by their real path, e.g. /sharedFolder/sample.bam (with HTTP
+# range requests, as IGV needs for BAM/CRAM/VCF).
+version     2.4.10
+url         https://igv.org/app-archive/igv-webapp.{version}.zip
+platforms   ubuntu-20.04 ubuntu-22.04 ubuntu-24.04 ubuntu-26.04 debian-12 debian-13

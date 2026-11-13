@@ -1,0 +1,15 @@
+# Kernel libraries: what a Python of the IMAGE needs to be a Jupyter kernel
+# (ipykernel and its dependencies), one set per Python version and architecture,
+# in vendor/kernel-libs/<arch>/cp3XY/. Built by scripts/make-vendor-kernel-libs.sh.
+# They are added at the END of that Python's path only when it runs as a kernel:
+# the image's own packages always come first, the image itself is not changed.
+#
+# Python versions covered (older ones: no recent ipykernel exists for them)
+3.8
+3.9
+3.10
+3.11
+3.12
+3.13
+3.14
+3.15

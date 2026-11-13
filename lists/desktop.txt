@@ -1,0 +1,5 @@
+# Desktop module: a Linux desktop (XFCE) in the browser, opened from the JupyterLab
+# launcher (jupyter-remote-desktop-proxy). Needs a VNC server that listens on a Unix
+# socket (-rfbunixpath): TigerVNC 1.11 or newer, i.e. Ubuntu 22.04 or newer and
+# Debian 12/13 (Ubuntu 20.04 has TigerVNC 1.10). One apt bundle per platform.
+platforms   ubuntu-22.04 ubuntu-24.04 ubuntu-26.04 debian-12 debian-13

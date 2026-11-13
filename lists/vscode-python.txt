@@ -1,0 +1,6 @@
+# Python packages the VS Code module adds to JupyDo's JupyterLab (/opt/python4Jup):
+# the launcher icon and the proxy that starts code-server as the user.
+# jupyter-server-proxy is listed explicitly: jupyter-vscode-proxy does not declare it,
+# and without it there is no launcher icon.
+jupyter-vscode-proxy
+jupyter-server-proxy

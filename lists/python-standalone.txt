@@ -1,0 +1,7 @@
+# Portable Python used for /opt/python4Jup (python-build-standalone, "install_only"
+# builds: run on any Linux with glibc >= 2.17). Same binary on every distribution:
+# one Python bundle per architecture. Checksums from the release's SHA256SUMS.
+release=20261003
+version=3.12.15
+sha256_x86_64=f937814031eab4698ca6d07ec606ede1825768f3f3e99af76d9db3900bee03c5
+sha256_aarch64=95c01982c9fcb9d95b0acfdb5eb8a6e0099dd11edf062314a474228d93f2b765

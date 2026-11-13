@@ -1,0 +1,7 @@
+# Apptainer module: version and checksum of the official source release, and the Go
+# version it needs (go.mod). Built from source for every distro x architecture by
+# scripts/make-vendor-apptainer.sh, with the official scripts that also build the
+# helper programs of the .deb/.rpm (squashfuse, fuse-overlayfs, gocryptfs, ...).
+version=1.5.4
+sha256=ec1f51e696ba384f90bc7ab2c7a438fee70da98763d001b8f3175d14a91cfcf6
+go_version=1.25.7

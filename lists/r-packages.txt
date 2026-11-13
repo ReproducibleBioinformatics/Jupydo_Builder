@@ -1,0 +1,3 @@
+# R packages vendored as sources and compiled by the R of the image at build time.
+# Only what JupyDo needs: the Jupyter R kernel. Users install the rest from CRAN.
+IRkernel

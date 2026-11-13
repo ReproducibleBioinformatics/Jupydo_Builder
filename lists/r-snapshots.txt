@@ -1,0 +1,10 @@
+# CRAN snapshots (Posit Package Manager, frozen at a date) vendored for the R kernel.
+# The image build picks the one for the R version it finds:
+#   name      date         R versions
+old         2019-12-01   <3.5
+legacy      2021-04-15   <4.2
+current     2026-10-01   >=4.2
+# legacy: versions old enough for the old R of Ubuntu 20.04 (R 4.0);
+# current: recent versions, written for recent R and compilers.
+# old: for R 3.2-3.4 (e.g. images of Ubuntu 16.04 / 18.04 with their own R): the oldest
+#      date with IRkernel on CRAN (1.0.2) and pbdZMQ still for R 3.2 (0.3-3).

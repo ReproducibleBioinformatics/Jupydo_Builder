@@ -1,0 +1,24 @@
+# Large-scale test list, made 2026-10-23 by scripts/bigtest/make-lists.py: the 1000 most used BioContainers (by quay.io popularity), all StaPH-B, the 100 most pulled Docker Hub repositories for 'bioinformatics'
+#set	image	repository	tag	updated	use
+biocontainers	quay.io/biocontainers/sentieon:202503.04--h633679f_0-amd64@sha256:5b61464268ef608452bc0110762349270ec77b5dd5c05f5378639d4ac0390a1c	quay.io/biocontainers/sentieon	202503.04--h633679f_0-amd64	2026-10-21	24155.0
+biocontainers	quay.io/biocontainers/bioconductor-msstats:4.18.1--r45ha27e39d_0@sha256:16d7cde4e27229ce185c3c33e8a9f961e7571a9cf66f3cae9a1bcbedd68a4111	quay.io/biocontainers/bioconductor-msstats	4.18.1--r45ha27e39d_0	2026-02-25	23035.0
+biocontainers	quay.io/biocontainers/vardict-java:1.8.4--hdfd78af_0@sha256:b81ee1c818ad3b64de21137b3d7c0d4c6367205f719562d6b3a81e639dbb04f3	quay.io/biocontainers/vardict-java	1.8.4--hdfd78af_0	2026-08-14	14709.0
+biocontainers	quay.io/biocontainers/r-base:4.3.3@sha256:623b78051ece50dadbb644f91bf0550716cfce0443681e4902b15120e21e9670	quay.io/biocontainers/r-base	4.3.3	2026-07-04	4810.0
+biocontainers	quay.io/biocontainers/biobb_analysis:5.3.0--pyhdfd78af_1@sha256:5af0b03790263a9146caa9638102b8bb00f66bb4f41eadffff24801d6d96e27d	quay.io/biocontainers/biobb_analysis	5.3.0--pyhdfd78af_1	2026-07-28	3983.0
+biocontainers	quay.io/biocontainers/biopython:1.65@sha256:767facd4c2fea92f23591c543e558b8b2ab7cfa38227d148a02ce0a61cdfa08a	quay.io/biocontainers/biopython	1.65	2026-01-22	3334.0
+biocontainers	quay.io/biocontainers/r-mfassignr:1.1.2--r44hdfd78af_0@sha256:f127d6028a5cdb6f686a561fc3414124a3a70fa68758c306726fcca2d565827e	quay.io/biocontainers/r-mfassignr	1.1.2--r44hdfd78af_0	2024-10-30	436.0
+biocontainers	quay.io/biocontainers/pgcgap:1.0.0--0@sha256:c90fdefcd9c31b22c33cf69d911bca8d943a4a3112de65caa26d228f5df896f2	quay.io/biocontainers/pgcgap	1.0.0--0	2024-07-09	418.0
+biocontainers	quay.io/biocontainers/numpy:2.2.2@sha256:e3d997552fd17da6344499e38d5a7d5c659db51a492cb3ea541f4ef90aa49f75	quay.io/biocontainers/numpy	2.2.2	2025-02-22	402.0
+biocontainers	quay.io/biocontainers/r-raceid:0.4.2@sha256:60c89078df2adf2b30df2d3c6858eefe884efdcd543a040b3bb361525ee948c5	quay.io/biocontainers/r-raceid	0.4.2	2026-06-26	400.0
+biocontainers	quay.io/biocontainers/ig-flowtools:1.0.0--py35_0@sha256:4234be64f670a05e55d5e6e32454a9fcdbee68566992a300c9a988dd0c75eb71	quay.io/biocontainers/ig-flowtools	1.0.0--py35_0	2024-06-26	390.0
+biocontainers	quay.io/biocontainers/velocyto.py:0.17.17--py36hc1659b7_0@sha256:3968f395c3f620e19165bc07d69e48f96f733a71204405efbfa82f1166001402	quay.io/biocontainers/velocyto.py	0.17.17--py36hc1659b7_0	2024-07-10	274.0
+biocontainers	quay.io/biocontainers/jalview:2.11.5.1--hdfd78af_0@sha256:6e544afb8a012b179947dcac9665a15cef2a71c688f001b4388ca31365dbc764	quay.io/biocontainers/jalview	2.11.5.1--hdfd78af_0	2025-12-14	241.0
+staphb	staphb/tiptoft:1.0.2-26@sha256:925233fff76204ab8c4ca40b7241948843f10daafd838c5ba246af874d7f8d24	staphb/tiptoft	1.0.2-26	2026-06-23	27991
+staphb	staphb/gubbins:3.4.1@sha256:54f0f0f74a995734c9d851d0aec058e761b7909a287b8ad1c1d51779062d83b1	staphb/gubbins	3.4.1	2025-09-25	12987
+staphb	staphb/dorado:2.1.2-cuda12.2.0-no_model@sha256:aa17c25b7dbd47f856c258f2ea369bc1a22cd22eed74da28aebeb1255bb9345f	staphb/dorado	2.1.2-cuda12.2.0-no_model	2026-10-02	12113
+staphb	staphb/qualimap:2.3@sha256:f45c42b1f502a2557769b85e757ab44e8411abb4ea3091ec776e1a3cb8337832	staphb/qualimap	2.3	2025-05-05	11786
+dockerhub	mpgagebioinformatics/bioinformatics_software:v4.0.4@sha256:59ae7737e79eb6dbc6f0740bb5ff2631289586628a7c13df7a46fe1c794c8c42	mpgagebioinformatics/bioinformatics_software	v4.0.4	2024-02-19	95165
+dockerhub	bioinformaticscoreatchildrens/bcrflow:latest@sha256:a87a4e7b0f7f02ada55c2263d09348f798f35778c1abc99bd641bc47c1114109	bioinformaticscoreatchildrens/bcrflow	latest	2024-08-12	23219
+dockerhub	ebispot/ols-solr:v3.2.4-main-test@sha256:1c04a2104f9ab6be69cf2b28a7e7d45529b0544fc5e13e600877cd903e2325a5	ebispot/ols-solr	v3.2.4-main-test	2023-02-10	11734
+dockerhub	vrishabsk/tymillerlab_bioinformatics:v4_singlecell_batch_cellbender@sha256:6804818698c21340763e3cdf5acc455eb69a8b577dc911617b02ff277770d565	vrishabsk/tymillerlab_bioinformatics	v4_singlecell_batch_cellbender	2026-06-01	4249
+dockerhub	benn888/proname:v2.3.0-amd64@sha256:01f45b804f158632b7c644d5385e3848c753e7e301026f3ea7006f520ef25dea	benn888/proname	v2.3.0-amd64	2026-05-19	2870

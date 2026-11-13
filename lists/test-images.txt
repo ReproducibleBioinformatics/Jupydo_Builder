@@ -1,0 +1,45 @@
+# Real images tested by "scripts/test-all.sh real": at least one for every bundle
+# (distribution x architecture), with and without R. One per line:
+#   <image>   <architectures, comma separated>   <expected platform, "-" = any, "unsupported" = must be refused>
+# The test checks that each image is detected as the expected distribution, then
+# builds it and runs the usual checks (kernels, user, compile). arm64 on an amd64
+# machine runs under emulation (slow).
+# Every image is pinned to its digest (image:tag@sha256:...), so the tests always
+# run on the same images: scripts/pin-test-images.sh adds the digest to new lines,
+# "--update" moves all of them to what the tags point to today. Prefer fixed
+# version tags to "latest": a registry may delete an old digest nobody tags any more.
+#
+# --- Ubuntu 16.04 (legacy Python bundle)
+rocker/r-apt:xenial@sha256:d0fd5f7480742156092ea4f0bb8644a4389bdc561a197579f7dc8499846b3148                             amd64         ubuntu-16.04   # R from Ubuntu's own apt
+# --- Ubuntu 18.04 (legacy Python bundle)
+rstudio/r-base:4.0-bionic@sha256:eb69f73cf388fdb795da77d944c981489463ded6ea350f0dd43d41af0112842e                       amd64         ubuntu-18.04   # R 4.0, Posit build
+rocker/r-apt:bionic@sha256:119a2526013427ca47e6e6743238c5a03ff3a62ef33c6ba8a2045bffe4ef0a8f                             amd64         ubuntu-18.04   # R from Ubuntu's own apt
+# --- Ubuntu 20.04
+posit/r-base:4.4-focal@sha256:3195df339b4adf810eb6625824d68d617a5a251e59648c02b376c447f76bfc1e                          amd64,arm64   ubuntu-20.04   # R 4.4, Posit build
+rocker/r-ver:4.0.5@sha256:fef68eaf0e829d464697948343ac440bbc189a0592b451eb99cddb46a8c8a7e3                              amd64         ubuntu-20.04   # R 4.0: "legacy" CRAN snapshot
+nvidia/cuda:12.6.3-base-ubuntu20.04@sha256:b0daeaac29cff5d2358b5ef11250441d15c3785e8e50c926efeadd8146f76413             amd64,arm64   ubuntu-20.04   # CUDA, no R
+# --- Ubuntu 22.04
+posit/r-base:4.5-jammy@sha256:9676dcd025596ea0407027b4a56905fda9391c4df692322748becc53e8873b08                          amd64,arm64   ubuntu-22.04   # R 4.5, Posit build
+rocker/geospatial:4.4.1@sha256:48dad9dc0917ffae05955b6d8c20edc90b32a885ead97bf8ef84153d5620832d                         amd64         ubuntu-22.04   # R + many system libraries (GDAL, PROJ), own PATH for R
+bioconductor/bioconductor_docker:RELEASE_3_19@sha256:c74fd973f50818c4044225c8cfcf318fa11087d5df1b6a08a5a604abbe91195a   amd64,arm64   ubuntu-22.04   # Bioconductor, RStudio inside
+nvidia/cuda:12.6.3-base-ubuntu22.04@sha256:a10f328daee4e6797838a34d5eab69618b907f6313f5e6370dc6ea0105ae9628             amd64,arm64   ubuntu-22.04   # CUDA, no R
+# --- Ubuntu 24.04
+posit/r-base:4.5-noble@sha256:456a48046bf089db476e3d632cd0b1bbf0cd96ec5b65d6a876e941564c4a3fa4                          amd64,arm64   ubuntu-24.04   # R 4.5, Posit build
+nvidia/cuda:12.6.3-base-ubuntu24.04@sha256:c87e78933f4c16e3272123bf2f75537306596d0fbaa395a29696a22786e5ee0e             amd64,arm64   ubuntu-24.04   # CUDA, no R
+condaforge/miniforge3:26.7.2-0@sha256:569afc65b5338d35e276adf9a860025cd37a677659d19dcb71fc1d4c2063a94e                  amd64,arm64   ubuntu-24.04   # conda-forge Python, no R
+# --- Ubuntu 26.04
+quay.io/jupyter/r-notebook:2026-10-12@sha256:a3514b7ba58a3e116127cbd033166f587951e167a76eb7e361fb1bab43de0390           amd64,arm64   ubuntu-26.04   # Jupyter stack, conda R with IRkernel already there
+quay.io/jupyter/scipy-notebook:2026-10-12@sha256:8f8a5763d9a01e7f488eff8d9379654788e9cc08286dbcbc6bcda129c1b0edcd       amd64,arm64   ubuntu-26.04   # Jupyter stack, conda Python
+# --- Debian 12
+posit/r-base:4.5-bookworm@sha256:ee4b0caa1c30cd4ce6686acf67783ed0022db46b59211f59bf71527f0243f76c                       amd64,arm64   debian-12      # R 4.5, Posit build
+python:3.12-bookworm@sha256:5560e9ab8709f459489e5b8aa696eda8a07ef821e14bb122be62d91234bfa98b                            amd64,arm64   debian-12      # official Python image, no R
+# --- Debian 13
+rstudio/r-base:devel-trixie@sha256:1241753f6bff47c962db5720f6a0d0971dd73b816665a834aae0ca0e7807f671                     amd64         debian-13      # R-devel, Posit build
+python:3.13-trixie@sha256:98daa3227dee3c38b8ee9e020e3785ec4274b1affd854c9f40ead46b6fb31f55                              amd64,arm64   debian-13      # official Python image, no R
+# --- BioContainers (BusyBox + conda in /usr/local): converted onto Debian 12
+quay.io/biocontainers/samtools:1.21--h50ea8bc_0@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5  amd64         debian-12      # BusyBox + conda (BioContainers): converted onto Debian 12
+# --- lab images
+hedgelab/rstudio_jupyter:catcheR_cellranger7@sha256:127fe693b40733e39be0db9afe00720b13edf41d8224fd4f41d33b1f76b32216    amd64         -              # lab image
+satijalab/seurat:5.0.0@sha256:fd8a2dfda142f4da85e4112f734f97b889e0bb314593e2709e0563d4fd95e87c                          amd64         -              # Seurat (single cell)
+# --- must be refused with a clear message
+r-base:4.6.1@sha256:198bf78cd85f5355173832ce3713921614c229752fcb4e0e7cb51b7713f745f7                                    amd64         unsupported    # Debian testing: no version number

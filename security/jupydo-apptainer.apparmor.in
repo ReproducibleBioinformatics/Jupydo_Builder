@@ -1,0 +1,78 @@
+# AppArmor profile "jupydo-apptainer": used ONLY by JupyDo containers with the
+# Apptainer module (Docker option --security-opt apparmor=jupydo-apptainer).
+#
+# It is Docker's own "docker-default" profile (github.com/moby/profiles, apparmor/
+# template.go), with THREE changes, marked "JupyDo:" below:
+#   1. mount allowed (docker-default: "deny mount"): Apptainer mounts its images
+#      inside its own user namespace;
+#   2. pivot_root allowed: to enter the Apptainer container;
+#   3. userns allowed: creating user namespaces. On Ubuntu 24.04+ unprivileged user
+#      namespaces are forbidden unless the program's AppArmor profile allows them:
+#      this rule allows them for these containers only, instead of lifting the ban
+#      for the whole machine (sysctl kernel.apparmor_restrict_unprivileged_userns).
+# The kernel still checks permissions inside the namespaces: no privilege on the host.
+#
+# Template: JupyDo's first_start.sh fills @ABI@ and @USERNS@ for the machine's
+# AppArmor version (the userns rule needs AppArmor 4, abi 4.0; older machines have
+# no ban to lift) and loads it with apparmor_parser.
+@ABI@
+#include <tunables/global>
+
+profile jupydo-apptainer flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  network,
+  # Disallow obsolete socket families removed from the Linux kernel.
+  deny network ax25,
+  deny network ipx,
+  deny network appletalk,
+  deny network netrom,
+  deny network rose,
+  deny network econet,
+  deny network atmsvc,
+  deny network irda,
+  deny network wanpipe,
+  deny network isdn,
+  deny network caif,
+  # Disallow AF_ALG (Linux kernel crypto API)
+  deny network alg,
+  # Disallow AF_VSOCK to prevent host/guest communication.
+  deny network vsock,
+  capability,
+  file,
+  umount,
+  # JupyDo: 1. mount allowed (docker-default denies it)
+  mount,
+  # JupyDo: 2. pivot_root allowed
+  pivot_root,
+  # JupyDo: 3. user namespaces allowed (AppArmor 4 only)
+  @USERNS@
+  # Host (privileged) processes may send signals to container processes.
+  signal (receive) peer=unconfined,
+  # runc / crun may send signals to container processes (for "docker stop").
+  signal (receive) peer=runc,
+  signal (receive) peer=crun,
+  # Container processes may send signals amongst themselves.
+  signal (send,receive) peer=jupydo-apptainer,
+
+  deny @{PROC}/* w,   # deny write for all files directly in /proc (not in a subdir)
+  # deny write to files not in /proc/<number>/** or /proc/sys/**
+  deny @{PROC}/{[^1-9/],[^1-9/][^0-9/],[^1-9s/][^0-9y/][^0-9s/],[^1-9/][^0-9/][^0-9/][^0-9/]*}/** w,
+  deny @{PROC}/sys/[^k]** w,  # deny /proc/sys except /proc/sys/k* (effectively /proc/sys/kernel)
+  deny @{PROC}/sys/kernel/{?,??,[^s][^h][^m]**} w,  # deny everything except shm* in /proc/sys/kernel/
+  deny @{PROC}/sysrq-trigger rwklx,
+  deny @{PROC}/kcore rwklx,
+
+  deny /sys/[^f]*/** wklx,
+  deny /sys/f[^s]*/** wklx,
+  deny /sys/fs/[^c]*/** wklx,
+  deny /sys/fs/c[^g]*/** wklx,
+  deny /sys/fs/cg[^r]*/** wklx,
+  deny /sys/firmware/** rwklx,
+  deny /sys/devices/virtual/powercap/** rwklx,
+  deny /sys/kernel/security/** rwklx,
+
+  # allow processes within the container to trace each other,
+  # provided all other LSM and yama setting allow it.
+  ptrace (trace,tracedby,read,readby) peer=jupydo-apptainer,
+}

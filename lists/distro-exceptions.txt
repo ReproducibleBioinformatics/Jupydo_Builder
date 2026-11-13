@@ -1,0 +1,8 @@
+# Exceptions to the package lists for single distributions: a package of
+# apt-base.txt that on that distribution has another name, or conflicts with the
+# rest of the list there. The lists themselves stay the same for every distribution.
+# Format: <distro>-<version>   <package in the list>   <replacement there, or "-" to skip it>
+ubuntu-16.04   libpng-dev             libpng12-dev
+# 18.04: libgit2-dev needs the GnuTLS build of curl, which conflicts with the OpenSSL one
+ubuntu-18.04   libcurl4-openssl-dev   libcurl4-gnutls-dev
+ubuntu-16.04   libcurl4-openssl-dev   libcurl4-gnutls-dev

@@ -1,0 +1,5 @@
+# Large-scale test list, made 2026-10-23 by scripts/bigtest/make-lists.py: the 1000 most used BioContainers (by quay.io popularity), all StaPH-B, the 100 most pulled Docker Hub repositories for 'bioinformatics'
+#set	image	repository	tag	updated	use
+biocontainers	quay.io/biocontainers/r-base:4.3.3@sha256:623b78051ece50dadbb644f91bf0550716cfce0443681e4902b15120e21e9670	quay.io/biocontainers/r-base	4.3.3	2026-07-04	4810.0
+biocontainers	quay.io/biocontainers/numpy:2.2.2@sha256:e3d997552fd17da6344499e38d5a7d5c659db51a492cb3ea541f4ef90aa49f75	quay.io/biocontainers/numpy	2.2.2	2025-02-22	402.0
+biocontainers	quay.io/biocontainers/ig-flowtools:1.0.0--py35_0@sha256:4234be64f670a05e55d5e6e32454a9fcdbee68566992a300c9a988dd0c75eb71	quay.io/biocontainers/ig-flowtools	1.0.0--py35_0	2024-06-26	390.0

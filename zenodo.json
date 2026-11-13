@@ -1,0 +1,15 @@
+{
+  "record": 24189890,
+  "sandbox_record": null,
+  "metadata": {
+    "title": "JupyDo builder: vendored bundles, builder source and JupyDo hub image",
+    "upload_type": "software",
+    "description": "Everything JupyDo needs to build reproducible JupyterLab environments offline: the vendored bundles of the JupyDo builder (Python, R, RStudio Server, VS Code, desktop, Apptainer, IGV, kernel libraries, apt packages, base images; amd64 and arm64), the builder source, and the JupyDo hub image. JupyDo's first_start.sh downloads them from here and checks them against SHA256SUMS.",
+    "creators": [
+      {"name": "Alessandri, Luca", "affiliation": "University of Turin"}
+    ],
+    "access_right": "open",
+    "license": "other-open",
+    "keywords": ["JupyDo", "JupyterHub", "reproducibility", "bioinformatics", "Docker"]
+  }
+}

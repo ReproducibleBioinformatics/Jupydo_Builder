@@ -1,0 +1,9 @@
+# Python packages of the JupyDo stack, installed in /opt/python4Jup (the Python
+# that runs JupyterLab and the default "Python 3" kernel).
+# Only the top-level packages are listed here: scripts/lock-python.sh resolves them
+# to python-requirements.lock, every dependency pinned to an exact version + hashes.
+# jupyterhub must match the hub version (jupyterhub-singleuser talks to the hub).
+jupyterhub==5.5.1
+jupyterlab
+notebook
+ipykernel

@@ -1,0 +1,10 @@
+# Base distributions supported by the builder: one vendor bundle per distro x architecture.
+# Format: <image>  (the official Docker image used to resolve and download the packages)
+ubuntu:16.04
+ubuntu:18.04
+ubuntu:20.04
+ubuntu:22.04
+ubuntu:24.04
+ubuntu:26.04
+debian:12
+debian:13

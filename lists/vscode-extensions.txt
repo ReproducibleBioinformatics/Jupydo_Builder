@@ -1,0 +1,5 @@
+# Extensions installed with the VS Code module, from Open VSX (open-vsx.org: the
+# Microsoft marketplace cannot be used by code-server). Their dependencies are added
+# automatically. Users can install more themselves.
+ms-python.python
+REditorSupport.r

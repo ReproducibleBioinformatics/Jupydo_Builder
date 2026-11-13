@@ -1,0 +1,6 @@
+# Base used to convert minimal BusyBox images with a conda environment in /usr/local
+# (BioContainers) into a supported image: the official Debian 12 image, the same
+# Bioconda uses for its "extended" images. scripts/make-vendor-bases.sh saves it,
+# per architecture, in vendor/bases/ (offline, with its digest in the manifest).
+# It must match an apt bundle (vendor/apt/debian-12-<arch>).
+debian:12

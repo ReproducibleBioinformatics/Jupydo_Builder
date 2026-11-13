@@ -1,0 +1,9 @@
+# Images for scripts/test-all.sh combos: every combination of 2 or more optional modules
+# is built on these (one per platform, all with R so that RStudio is really tested), amd64.
+# Each module alone and all of them together are tested on every image by the other runs.
+posit/r-base:4.4-focal@sha256:3195df339b4adf810eb6625824d68d617a5a251e59648c02b376c447f76bfc1e
+posit/r-base:4.5-jammy@sha256:9676dcd025596ea0407027b4a56905fda9391c4df692322748becc53e8873b08
+posit/r-base:4.5-noble@sha256:456a48046bf089db476e3d632cd0b1bbf0cd96ec5b65d6a876e941564c4a3fa4
+quay.io/jupyter/r-notebook:2026-10-12@sha256:a3514b7ba58a3e116127cbd033166f587951e167a76eb7e361fb1bab43de0390
+posit/r-base:4.5-bookworm@sha256:ee4b0caa1c30cd4ce6686acf67783ed0022db46b59211f59bf71527f0243f76c
+rstudio/r-base:devel-trixie@sha256:1241753f6bff47c962db5720f6a0d0971dd73b816665a834aae0ca0e7807f671

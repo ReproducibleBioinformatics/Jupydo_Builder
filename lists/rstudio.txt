@@ -1,0 +1,12 @@
+# RStudio module: RStudio Server (open-source edition, official Posit package) for
+# each platform, and the JupyterLab extension that opens it from the launcher.
+# Recent Posit builds are made for Ubuntu 22.04 ("jammy") and also serve newer Ubuntu
+# and Debian 12/13; Ubuntu 20.04 needs the last "focal" build. No RStudio module for
+# Ubuntu 16.04/18.04 (too old for any current build).
+# <platform>    <.deb URL; {arch} = amd64 or arm64>
+ubuntu-20.04    https://s3.amazonaws.com/rstudio-ide-build/server/focal/{arch}/rstudio-server-2024.12.1-541-{arch}.deb
+ubuntu-22.04    https://dl.dailies.rstudio.com/server/jammy/{arch}/rstudio-server-2026.07.1-146-{arch}.deb
+ubuntu-24.04    https://dl.dailies.rstudio.com/server/jammy/{arch}/rstudio-server-2026.07.1-146-{arch}.deb
+ubuntu-26.04    https://dl.dailies.rstudio.com/server/jammy/{arch}/rstudio-server-2026.07.1-146-{arch}.deb
+debian-12       https://dl.dailies.rstudio.com/server/jammy/{arch}/rstudio-server-2026.07.1-146-{arch}.deb
+debian-13       https://dl.dailies.rstudio.com/server/jammy/{arch}/rstudio-server-2026.07.1-146-{arch}.deb

@@ -1,0 +1,9 @@
+# System packages of the Desktop module (with all their dependencies, offline)
+xfce4
+xfce4-terminal
+mousepad
+dbus-x11
+tigervnc-standalone-server
+xauth
+x11-xserver-utils
+fonts-dejavu-core

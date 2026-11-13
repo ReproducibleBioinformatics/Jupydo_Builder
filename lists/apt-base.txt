@@ -1,0 +1,81 @@
+# JupyDo base system packages: installed in every JupyDo image, offline, from the
+# vendor bundle of its distribution. Goal: an image where users can work and
+# compile (install.packages() / pip install of packages with C, C++ or Fortran code).
+#
+# Syntax: one package per line, comments with #.
+#   a|b     the first of the alternatives available in that release (names change)
+#   ?pkg    optional: skipped with a warning if that release does not have it
+
+# --- compilers and build tools
+build-essential
+gfortran
+pkg-config
+cmake
+git
+
+# --- network and security
+curl
+wget
+ca-certificates
+libcurl4-openssl-dev
+libssl-dev
+
+# --- compression
+zlib1g-dev
+libbz2-dev
+liblzma-dev
+libzstd-dev
+?libdeflate-dev
+
+# --- text and XML
+libxml2-dev
+libpcre2-dev
+libicu-dev
+
+# --- graphics (ragg, systemfonts, textshaping: tidyverse, devtools, saving plots)
+libpng-dev
+libjpeg-dev|libjpeg-turbo8-dev|libjpeg62-turbo-dev
+libtiff-dev|libtiff5-dev
+libfreetype6-dev|libfreetype-dev
+libfontconfig1-dev
+libharfbuzz-dev
+libfribidi-dev
+libcairo2-dev
+libxt-dev
+
+# --- linear algebra
+libblas-dev
+liblapack-dev
+
+# --- Jupyter R kernel (pbdZMQ), devtools/gert
+libzmq3-dev|libzmq5-dev
+libgit2-dev
+
+# --- bioinformatics: libraries asked for by common R/Bioconductor and Python packages
+libhdf5-dev
+libgsl-dev
+libglpk-dev
+libgmp-dev
+libmpfr-dev
+libncurses-dev|libncurses5-dev
+libsqlite3-dev
+libnetcdf-dev
+libfftw3-dev
+libtbb-dev|libtbb2-dev
+libeigen3-dev
+libudunits2-dev
+
+# --- everyday command-line tools
+pigz
+zip
+unzip
+rsync
+file
+less
+procps
+psmisc
+
+# --- JupyDo runtime: per-user account, sudo (the entrypoint switches user with
+# setpriv, part of util-linux; gosu is the fallback for images without it)
+sudo
+gosu

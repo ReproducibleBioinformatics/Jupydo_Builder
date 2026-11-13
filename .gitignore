@@ -1,0 +1,9 @@
+# Vendor bundles: built by scripts/make-vendor-*.sh or downloaded from Zenodo
+vendor/
+# temporary build context of scripts/build-image.sh
+.build-context/
+tests/logs/
+# Test results: logs and archived runs (large; kept on the machine that ran them)
+tests/archive/
+tests/*/logs/
+__pycache__/
