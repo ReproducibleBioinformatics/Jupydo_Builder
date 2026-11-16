@@ -57,6 +57,14 @@ def sha256(path):
     return h.hexdigest()
 
 
+def md5sum(path):   # Zenodo gives the MD5 of each file it holds
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(8 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
 # ------------------------------------------------------------------ 1. pack
 def pack(out, hub_image):
     os.makedirs(out, exist_ok=True)
@@ -158,9 +166,17 @@ def upload(out, sandbox, publish):
         say(f"new version of record {cfg[key]}")
         r = z.call("POST", f"/deposit/depositions/{cfg[key]}/actions/newversion")
         draft = z.call("GET", r["links"]["latest_draft"])
+    # files already there with the same content are kept (a new version starts with the
+    # previous version's files): only new or changed files are uploaded
+    md5 = {f: md5sum(os.path.join(out, f)) for f in files}
+    keep = set()
     if current:
-        for f in draft.get("files", []):   # start from no files (the old version's, or a past try)
-            z.call("DELETE", f"/deposit/depositions/{draft['id']}/files/{f['id']}")
+        for f in draft.get("files", []):
+            name, checksum = f.get("filename"), (f.get("checksum") or "").replace("md5:", "")
+            if name in md5 and checksum == md5[name]:
+                keep.add(name)
+            else:
+                z.call("DELETE", f"/deposit/depositions/{draft['id']}/files/{f['id']}")
     else:
         say("first upload: a new record")
         draft = z.call("POST", "/deposit/depositions", {})
@@ -172,6 +188,9 @@ def upload(out, sandbox, publish):
     z.call("PUT", f"/deposit/depositions/{draft['id']}", {"metadata": meta})
     for f in files:
         size = os.path.getsize(os.path.join(out, f)) / 1e9
+        if f in keep:
+            say(f"unchanged  {f} ({size:.2f} GB)")
+            continue
         say(f"uploading {f} ({size:.2f} GB)")
         z.put_file(draft["links"]["bucket"], os.path.join(out, f))
     cfg[key] = draft["id"]

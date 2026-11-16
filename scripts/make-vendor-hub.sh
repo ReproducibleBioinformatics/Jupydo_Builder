@@ -85,7 +85,12 @@ for arch in "${ARCHS[@]}"; do
     docker pull -q --platform "linux/$arch" "$BASE" >/dev/null
     digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$BASE")"
     docker tag "$BASE" jupydo-hub-base:vendored
-    docker save jupydo-hub-base:vendored | gzip -1 > "$dir/base-image.tar.gz"
+    # --platform: only this architecture (Docker's containerd store would otherwise save
+    # the whole multi-architecture index, with the layers of whatever is on this machine)
+    docker save --platform "linux/$arch" jupydo-hub-base:vendored | gzip -1 > "$dir/base-image.tar.gz"
+    saved="$(tar -xzOf "$dir/base-image.tar.gz" manifest.json | python3 -c 'import json,sys;print(json.load(sys.stdin)[0]["Config"])')"
+    saved_arch="$(tar -xzOf "$dir/base-image.tar.gz" "$saved" | python3 -c 'import json,sys;print(json.load(sys.stdin)["architecture"])')"
+    [ "$saved_arch" = "$arch" ] || { echo "ERROR: the saved base image is $saved_arch, not $arch" >&2; exit 1; }
 
     echo "  Python packages (wheels)"
     printf '%s\n' "${REQUIREMENTS[@]}" > "$dir/requirements.txt"
