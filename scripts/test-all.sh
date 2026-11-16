@@ -267,10 +267,10 @@ if [ "$WHAT" = "big" ]; then
   LIMIT="${LIMIT:-0}"   # >0: only the first LIMIT images of the list (they are in order of use)
   BIG="$OUT/big-results.tsv"
   [ -f "$BIG" ] || printf 'set\timage\tplatform\tclassic\tkernels\tpy_kernels\tr_kernels\tuser\tcompile\tmodules\tmodules_build\tmodules_check\tapptainer\trstudio\tvscode\tdesktop\tigv\tminutes\treason\n' > "$BIG"
-  NETRE='failed to resolve reference|i/o timeout|x509:|TLS handshake|no such host|connection refused|connection reset|connection timed out|toomanyrequests|unexpected EOF|net/http|failed to copy: read tcp'
+  NETRE='failed to resolve reference|i/o timeout|x509:|TLS handshake|no such host|connection refused|connection reset|connection timed out|toomanyrequests|unexpected EOF|net/http|failed to copy: read tcp|received unexpected HTTP status: 5[0-9][0-9]|Bad Gateway|Gateway Time-out|Service Unavailable'
   NET_TRIES="${NET_TRIES:-0}"   # tries of an image that fails for the network: 0 = until a real result
   # the image (or its digest) is no longer on its registry: deleted, not a network error
-  UNRE='manifest unknown|repository does not exist|pull access denied|requested access to the resource is denied|name unknown'
+  UNRE='failed to resolve reference .*: not found$|manifest unknown|repository does not exist|pull access denied|requested access to the resource is denied|name unknown'
 
   # Waits until the registries answer (any HTTP answer: 401 without login is fine),
   # e.g. after the university network cut; checks every minute.
