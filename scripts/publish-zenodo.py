@@ -59,7 +59,8 @@ def sha256(path):
 def pack(out, hub_image):
     os.makedirs(out, exist_ok=True)
     vendor = os.path.join(ROOT, "vendor")
-    bundles = sorted(d for d in os.listdir(vendor) if os.path.isdir(os.path.join(vendor, d)))
+    # hidden folders (.downloads: tools the make-vendor scripts use here) are not bundles
+    bundles = sorted(d for d in os.listdir(vendor) if os.path.isdir(os.path.join(vendor, d)) and not d.startswith("."))
     if not bundles:
         sys.exit(f"ERROR: {vendor} is empty: run the make-vendor-*.sh scripts first")
     for b in bundles:
