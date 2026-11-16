@@ -41,6 +41,8 @@ CONFIG = os.path.join(ROOT, "zenodo.json")
 SOURCE_PARTS = ["Dockerfile", "Dockerfile.convert", "vendor_list.txt", "modules", "scripts", "security",
                 "lists", "docs", "zenodo.json", ".gitignore"]
 ARCHS = ("amd64", "arm64")
+# Zenodo's firewall refuses requests without a User-Agent as "unusual traffic"
+USER_AGENT = "jupydo-publish-zenodo/1.0 (+https://github.com/ReproducibleBioinformatics/Jupydo_Builder)"
 
 
 def say(*a):
@@ -115,7 +117,8 @@ class Zenodo:
         url = url if url.startswith("http") else self.api + url
         data = json.dumps(body).encode() if body is not None else None
         req = urllib.request.Request(url, data=data, method=method, headers={
-            "Authorization": "Bearer " + self.token, "Content-Type": "application/json"})
+            "Authorization": "Bearer " + self.token, "Content-Type": "application/json",
+            "Accept": "application/json", "User-Agent": USER_AGENT})
         try:
             with urllib.request.urlopen(req, timeout=120) as r:
                 text = r.read()
@@ -131,7 +134,9 @@ class Zenodo:
         with open(path, "rb") as f:
             conn.request("PUT", u.path, body=f, headers={"Authorization": "Bearer " + self.token,
                                                          "Content-Type": "application/octet-stream",
-                                                         "Content-Length": str(size)})
+                                                         "Content-Length": str(size),
+                                                         "Accept": "application/json",
+                                                         "User-Agent": USER_AGENT})
             r = conn.getresponse()
             text = r.read().decode(errors="replace")
         if r.status not in (200, 201):
