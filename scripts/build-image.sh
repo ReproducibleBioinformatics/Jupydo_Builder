@@ -152,9 +152,10 @@ else
   for module in $(printf '%s\n' "${MODULE_LIST[@]}" | sort); do TAG="${TAG}-${module}"; done
 fi
 
-# ---- minimal build context (hard links when possible: no copy of the bundles)
-CTX="${ROOT}/.build-context"
-rm -rf "$CTX"; mkdir -p "$CTX/selected"
+# ---- minimal build context (hard links when possible: no copy of the bundles); one
+# folder per build, so that several builds can run at the same time from this folder
+CTX="$(mktemp -d "${ROOT}/.build-context.XXXXXX")"
+mkdir -p "$CTX/selected"
 trap 'rm -rf "$CTX"' EXIT
 cp Dockerfile "$CTX/"
 cp -r modules "$CTX/"
