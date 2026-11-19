@@ -9,13 +9,41 @@ set -euo pipefail
 BUNDLE="${1:?usage: install-desktop.sh <bundle folder>}"
 export DEBIAN_FRONTEND=noninteractive
 
+# Never remove anything the image has (e.g. its compilers), and prefer the versions it
+# already has: the bundle only adds what is missing. If the module really needs newer
+# versions, a second try upgrades them, still without removing anything (else it stops).
+bundle_install() {   # bundle_install <apt dir> <package>...
+  local dir="$1"; shift
+  mkdir -p "$dir/prefs.d"
+  printf 'Package: *\nPin: origin ""\nPin-Priority: 50\n' > "$dir/prefs.d/prefer-installed.pref"
+  apt-get "${APT_ONLY_BUNDLE[@]}" -o Dir::Etc::preferencesparts="$dir/prefs.d" \
+      install -y --no-install-recommends --no-remove "$@" \
+  || { echo "[jupydo] the module needs newer versions of some packages: upgrading them (nothing removed)" >&2
+       apt-get "${APT_ONLY_BUNDLE[@]}" install -y --no-install-recommends --no-remove "$@"; } \
+  || { echo "[jupydo] trying the distribution's archive too (the image's own apt sources, online)" >&2
+       local od="$dir/online.d" before="$dir/before-online.txt"
+       mkdir -p "$od" "$dir/online-state/partial"
+       cp -a /etc/apt/sources.list.d/. "$od"/ 2>/dev/null || true
+       [ -f /etc/apt/sources.list ] && cp /etc/apt/sources.list "$od/image.list"
+       cp "$dir/sources.list" "$od/jupydo-bundles.list"
+       local ONLINE=(-o Dir::Etc::sourcelist=/dev/null -o Dir::Etc::sourceparts="$od"
+                     -o Dir::State::Lists="$dir/online-state" -o APT::Default-Release=)
+       dpkg-query -W -f '${db:Status-Abbrev} ${Package}:${Architecture} ${Version}\n' | awk '$1 == "ii" {print $2, $3}' | sort > "$before"
+       apt-get "${ONLINE[@]}" update \
+       && apt-get "${ONLINE[@]}" install -y --no-install-recommends --no-remove "$@" \
+       && dpkg-query -W -f '${db:Status-Abbrev} ${Package}:${Architecture} ${Version}\n' | awk '$1 == "ii" {print $2, $3}' \
+            | sort | comm -13 "$before" - >> /opt/jupydo/apt-online.txt; }
+}
+
 mkdir -p /tmp/desktop-apt/state/partial
 echo "deb [trusted=yes] file:${BUNDLE}/debs ./" > /tmp/desktop-apt/sources.list
+# the base apt bundle (same distribution), to upgrade instead of remove (see the Dockerfile)
+[ -d /tmp/vendor-apt/debs ] && echo "deb [trusted=yes] file:/tmp/vendor-apt/debs ./" >> /tmp/desktop-apt/sources.list
 APT_ONLY_BUNDLE=(-o Dir::Etc::sourcelist=/tmp/desktop-apt/sources.list -o Dir::Etc::sourceparts=-
                  -o Dir::State::Lists=/tmp/desktop-apt/state -o APT::Get::List-Cleanup=0
                  -o APT::Default-Release=)   # some images set it (e.g. "testing"): unknown to the bundle
 apt-get "${APT_ONLY_BUNDLE[@]}" update
-apt-get "${APT_ONLY_BUNDLE[@]}" install -y --no-install-recommends $(cat "${BUNDLE}/packages.txt")
+bundle_install /tmp/desktop-apt $(cat "${BUNDLE}/packages.txt")
 rm -rf /tmp/desktop-apt
 command -v vncserver >/dev/null || { echo "ERROR: vncserver not found after the installation" >&2; exit 1; }
 

@@ -45,6 +45,18 @@ Built `FROM` the chosen image (named `jupydo/<image name>:<tag>`), it adds:
   fails if something is missing); JupyDo also runs it to decide whether an image is ready;
 - **`jupydo-selftest`**: the environment self-test, as a terminal command.
 
+**The image is never broken.** The build never removes a package of the image. When the
+image has other versions of some packages than JupyDo's bundles, apt tries, in order:
+1. the bundles alone (installing, or stepping packages back or forward to the bundle's
+   versions, nothing removed);
+2. if that is not enough and there is network, the distribution's archive too (the image's
+   own apt sources) for the versions the bundles lack, nothing removed; what came from it is
+   listed in `/opt/jupydo/apt-online.txt`;
+3. if even that is not enough, the JupyDo packages that would remove packages of the image
+   are left out (`/opt/jupydo/apt-skipped.txt`), and a module that cannot be added without
+   removing packages of the image is left out (`/opt/jupydo/modules-skipped.txt`): the
+   environment is built anyway, and `jupydo-check` shows a warning instead of a failure.
+
 Labels record what was done: `org.jupydo.builder` (builder version: an image is ready only
 if built by the current one), `org.jupydo.modules`, the platform, the kernel libraries.
 Only the bundles of the image's distribution and architecture are sent to Docker.
@@ -114,6 +126,15 @@ The package lists are in `lists/` (`python-requirements.in` → `lock-python.sh`
 `desktop*.txt`, `igv*.txt`, `apptainer*.txt`, `distros.txt`, `distro-exceptions.txt`).
 `vendor_list.txt` lists the files of a complete `vendor/`.
 
+## Getting the bundles
+
+On any machine, from a clone of this repository, download them from Zenodo (checked against
+the record's SHA-256, resumable):
+
+```bash
+scripts/get-vendor.sh            # the record in zenodo.json, or: scripts/get-vendor.sh <record>
+```
+
 ## Publishing on Zenodo
 
 `scripts/publish-zenodo.py` puts on Zenodo, as a new version of the same record (a DOI per
@@ -146,7 +167,8 @@ scripts/test-all.sh apptainer        # the Apptainer module on every distributio
 scripts/test-all.sh big              # the large-scale test (lists/bigtest/)
 ```
 
-Results go to `tests/results-<date>.tsv` (logs in `tests/logs/`; `RUN_DIR` keeps a run
+In the large-scale test, the columns `removed` and `skipped` list the packages of the image
+the build removed (always `-`) and the JupyDo packages it left out. Results go to `tests/results-<date>.tsv` (logs in `tests/logs/`; `RUN_DIR` keeps a run
 apart). `pin-test-images.sh` pins the test images to their digests, so the tests always
 run on the same images.
 

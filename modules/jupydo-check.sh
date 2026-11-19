@@ -6,6 +6,18 @@ PY=/opt/python4Jup/bin
 FAIL=0
 ok() { echo "OK   $1"; }
 ko() { echo "FAIL $1"; FAIL=1; }
+warn() { echo "WARN $1"; }
+# What the build left out on purpose, so as not to remove packages of the image: packages
+# of JupyDo's apt bundle (apt-skipped.txt) and whole modules (modules-skipped.txt)
+SKIPPED_PKGS=" $(cat /opt/jupydo/apt-skipped.txt 2>/dev/null | tr '\n' ' ') "
+SKIPPED_MODS=" $(cat /opt/jupydo/modules-skipped.txt 2>/dev/null | tr '\n' ' ') "
+MODS=""
+for m in ${JUPYDO_MODULES:-}; do
+  case "$SKIPPED_MODS" in
+    *" $m "*) warn "module $m left out: it cannot be added to this image without removing packages of the image" ;;
+    *) MODS="$MODS $m" ;;
+  esac
+done
 
 if [ -x "$PY/python3" ]; then ok "python4Jup ($("$PY/python3" --version 2>&1))"; else ko "python4Jup missing ($PY/python3)"; fi
 
@@ -70,7 +82,13 @@ for tool in gcc g++ gfortran make pkg-config; do
   command -v "$tool" >/dev/null 2>&1 || MISSING_TOOLS="$MISSING_TOOLS $tool"
 done
 if [ -z "$MISSING_TOOLS" ]; then ok "build tools (gcc, g++, gfortran, make, pkg-config)"
-else ko "build tools missing:$MISSING_TOOLS"; fi
+else
+  # left out on purpose (they would remove packages of the image): a warning, not a failure
+  NOT_SKIPPED=""
+  for t in $MISSING_TOOLS; do case "$SKIPPED_PKGS" in *" $t "*) ;; *) NOT_SKIPPED="$NOT_SKIPPED $t" ;; esac; done
+  if [ -z "$NOT_SKIPPED" ]; then warn "build tools missing:$MISSING_TOOLS (left out: they would remove packages of the image)"
+  else ko "build tools missing:$MISSING_TOOLS"; fi
+fi
 
 # The system package tools must keep working: users install software with sudo apt.
 # (They break if libraries of the image shadow the system ones, e.g. a conda
@@ -85,12 +103,12 @@ if command -v sudo >/dev/null 2>&1; then ok "sudo"; else ko "sudo missing (add i
 if [ -x /usr/local/bin/jupydo-entrypoint ]; then ok "entrypoint"; else ko "entrypoint missing"; fi
 
 # optional modules the image was built with
-case " ${JUPYDO_MODULES:-} " in
+case " ${MODS} " in
   *" apptainer "*)
     if apptainer --version >/dev/null 2>&1; then ok "module apptainer ($(apptainer --version))"
     else ko "module apptainer: apptainer missing or not working"; fi ;;
 esac
-case " ${JUPYDO_MODULES:-} " in
+case " ${MODS} " in
   *" igv "*)
     if [ -f /opt/igv-webapp/index.html ] && [ -x /opt/jupydo/igv-serve.py ] \
        && "$PY/python3" -c "import jupyter_server_proxy" 2>/dev/null \
@@ -98,14 +116,14 @@ case " ${JUPYDO_MODULES:-} " in
       ok "module igv (IGV-Web app; files opened by their real path, e.g. /sharedFolder/...)"
     else ko "module igv: the IGV-Web app, its server or the launcher entry missing"; fi ;;
 esac
-case " ${JUPYDO_MODULES:-} " in
+case " ${MODS} " in
   *" desktop "*)
     if command -v vncserver >/dev/null 2>&1 && command -v xfce4-session >/dev/null 2>&1 \
        && "$PY/python3" -c "import jupyter_remote_desktop_proxy, jupyter_server_proxy" 2>/dev/null; then
       ok "module desktop (XFCE, $(dpkg-query -W -f 'TigerVNC ${Version}' tigervnc-standalone-server 2>/dev/null || echo VNC))"
     else ko "module desktop: XFCE, the VNC server or its JupyterLab extension missing or not working"; fi ;;
 esac
-case " ${JUPYDO_MODULES:-} " in
+case " ${MODS} " in
   *" vscode "*)
     if CSV="$(code-server --version 2>/dev/null | head -1)" && [ -n "$CSV" ] \
        && "$PY/python3" -c "import jupyter_vscode_proxy, jupyter_server_proxy" 2>/dev/null; then
@@ -113,7 +131,7 @@ case " ${JUPYDO_MODULES:-} " in
       ok "module vscode (code-server ${CSV%% *}, ${NEXT:-0} extensions)"
     else ko "module vscode: code-server or its JupyterLab extension missing or not working"; fi ;;
 esac
-case " ${JUPYDO_MODULES:-} " in
+case " ${MODS} " in
   *" rstudio "*)
     RS=/usr/lib/rstudio-server/bin/rserver; [ -x "$RS" ] || RS="$(command -v rserver || true)"
     if [ -n "$RS" ] && RSV="$(dpkg-query -W -f '${Version}' rstudio-server 2>/dev/null || "$RS" --version 2>&1 | head -1)" \

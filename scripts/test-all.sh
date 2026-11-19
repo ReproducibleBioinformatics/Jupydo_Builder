@@ -266,9 +266,15 @@ if [ "$WHAT" = "big" ]; then
   BIG_ARCH="${BIG_ARCH:-$host_arch}"
   LIMIT="${LIMIT:-0}"   # >0: only the first LIMIT images of the list (they are in order of use)
   BIG="$OUT/big-results.tsv"
-  [ -f "$BIG" ] || printf 'set\timage\tplatform\tclassic\tkernels\tpy_kernels\tr_kernels\tuser\tcompile\tmodules\tmodules_build\tmodules_check\tapptainer\trstudio\tvscode\tdesktop\tigv\tminutes\treason\n' > "$BIG"
+  [ -f "$BIG" ] || printf 'set\timage\tplatform\tclassic\tkernels\tpy_kernels\tr_kernels\tuser\tcompile\tmodules\tmodules_build\tmodules_check\tapptainer\trstudio\tvscode\tdesktop\tigv\tminutes\treason\tremoved\tskipped\n' > "$BIG"
   NETRE='failed to resolve reference|i/o timeout|x509:|TLS handshake|no such host|connection refused|connection reset|connection timed out|toomanyrequests|unexpected EOF|net/http|failed to copy: read tcp|received unexpected HTTP status: 5[0-9][0-9]|Bad Gateway|Gateway Time-out|Service Unavailable'
   NET_TRIES="${NET_TRIES:-0}"   # tries of an image that fails for the network: 0 = until a real result
+  # packages of the image the build REMOVED (should never happen: "-"), and packages of
+  # JupyDo's apt bundle it SKIPPED because they would have removed packages of the image
+  removed_pkgs() { grep -hoE "^#[0-9]+ [0-9.]+ Removing [^ ']+ \(" "$@" 2>/dev/null | awk '{print $4}' \
+                     | sort -u | paste -sd, - | cut -c1-300; }
+  skipped_pkgs() { grep -hoE "^#[0-9]+ [0-9.]+ +skipped \(would remove packages of the image\): [^ ]+" "$@" 2>/dev/null \
+                     | awk '{print $NF}' | sort -u | paste -sd, - | cut -c1-300; }
   # the image (or its digest) is no longer on its registry: deleted, not a network error
   UNRE='failed to resolve reference .*: not found$|manifest unknown|repository does not exist|pull access denied|requested access to the resource is denied|name unknown'
 
@@ -348,9 +354,11 @@ if [ "$WHAT" = "big" ]; then
     [ "$had_base" = 1 ] || docker rmi "$image" >/dev/null 2>&1 || true
     docker builder prune -f --keep-storage "${KEEP_CACHE:-50GB}" >/dev/null 2>&1 || true
     big_min=$(( ($(date +%s) - big_start + 59) / 60 ))
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    removed="$(removed_pkgs "$clog" "${mlog:-/dev/null}")"; skipped="$(skipped_pkgs "$clog" "${mlog:-/dev/null}")"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
       "$set" "$image" "$platform" "$classic" "$kernels" "$npy" "$nr" "$user" "$compile" \
-      "$mods" "$mb" "$mc" "$ap" "$rs" "$vs" "$ds" "$ig" "$big_min" "$reason" >> "$BIG"
+      "$mods" "$mb" "$mc" "$ap" "$rs" "$vs" "$ds" "$ig" "$big_min" "$reason" "${removed:--}" "${skipped:--}" >> "$BIG"
+    mlog=""
   done < "$LIST"
   rm -f "$OUT/.big-classic.tsv" "$OUT/.big-modules.tsv"
   echo

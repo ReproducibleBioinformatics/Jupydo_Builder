@@ -68,16 +68,44 @@ RUN export DEBIAN_FRONTEND=noninteractive \
  && installed() { dpkg-query -W -f '${db:Status-Abbrev} ${Package}:${Architecture} ${Version}\n' \
                   | awk '$1 == "ii" {print $2, $3}' | sort; } \
  && installed > $V/before.txt \
+ && : > /opt/jupydo/apt-skipped.txt && : > /opt/jupydo/apt-online.txt \
  && apt-get "${APT_ONLY_VENDOR[@]}" update \
- && if ! apt-get "${APT_ONLY_VENDOR[@]}" install -y --no-install-recommends --allow-downgrades \
+ && if ! apt-get "${APT_ONLY_VENDOR[@]}" install -y --no-install-recommends --allow-downgrades --no-remove \
           $(cat $V/lists/base.txt); then \
-      echo "JupyDo: the image is newer than the apt bundle for some packages:" \
+      echo "JupyDo: the image has other versions of some packages than the apt bundle:" \
            "retrying with the bundle's versions (step back, nothing removed)" >&2; \
       printf 'Package: *\nPin: origin ""\nPin-Priority: 1001\n' > $V/prefs.d/jupydo-vendor.pref; \
       cut -d: -f1 $V/before.txt | awk 'NR == FNR {have[$1]; next} !($1 in have)' - $V/lists/base.txt \
         > $V/missing.txt; \
-      apt-get "${APT_ONLY_VENDOR[@]}" -o Dir::Etc::preferencesparts=$V/prefs.d \
-        install -y --no-install-recommends --allow-downgrades --no-remove $(cat $V/missing.txt); \
+      if ! apt-get "${APT_ONLY_VENDOR[@]}" -o Dir::Etc::preferencesparts=$V/prefs.d \
+             install -y --no-install-recommends --allow-downgrades --no-remove $(cat $V/missing.txt) \
+         && ! { echo "JupyDo: trying the distribution's archive too (the image's own apt sources," \
+                     "online), for the versions the bundle does not have" >&2; \
+                mkdir -p $V/online.d $V/online-state/partial; \
+                cp -a /etc/apt/sources.list.d/. $V/online.d/ 2>/dev/null; \
+                [ -f /etc/apt/sources.list ] && cp /etc/apt/sources.list $V/online.d/image.list; \
+                cp $V/vendor.list $V/online.d/jupydo-bundle.list; \
+                ONLINE=(-o Dir::Etc::sourcelist=/dev/null -o Dir::Etc::sourceparts=$V/online.d \
+                        -o Dir::State::Lists=$V/online-state -o APT::Default-Release=); \
+                installed > $V/before-online.txt; \
+                apt-get "${ONLINE[@]}" update \
+                && apt-get "${ONLINE[@]}" install -y --no-install-recommends --allow-downgrades --no-remove \
+                     $(cat $V/missing.txt) \
+                && { installed | comm -13 $V/before-online.txt - >> /opt/jupydo/apt-online.txt; \
+                     echo "WARNING: packages taken from the distribution's archive (online):" >&2; \
+                     sed 's/^/  /' /opt/jupydo/apt-online.txt >&2; }; }; then \
+        echo "JupyDo: some packages of the bundle would remove packages of the image:" \
+             "skipping them (the image's packages are kept)" >&2; \
+        : > $V/ok.txt; \
+        for p in $(cat $V/missing.txt); do \
+          if apt-get "${APT_ONLY_VENDOR[@]}" -o Dir::Etc::preferencesparts=$V/prefs.d -s \
+               install --no-install-recommends --allow-downgrades "$p" 2>/dev/null | grep -q '^Remv '; then \
+            echo "$p" >> /opt/jupydo/apt-skipped.txt; else echo "$p" >> $V/ok.txt; fi; \
+        done; \
+        sed 's/^/  skipped (would remove packages of the image): /' /opt/jupydo/apt-skipped.txt >&2; \
+        apt-get "${APT_ONLY_VENDOR[@]}" -o Dir::Etc::preferencesparts=$V/prefs.d \
+          install -y --no-install-recommends --allow-downgrades --no-remove $(cat $V/ok.txt); \
+      fi; \
     fi \
  && installed > $V/after.txt \
  && : > /opt/jupydo/apt-downgrades.txt && : > /opt/jupydo/apt-upgrades.txt \
@@ -92,7 +120,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
  && if [ -s /opt/jupydo/apt-upgrades.txt ]; then \
       echo "WARNING: packages of the image brought forward to the bundle's version (image older than the bundle):" >&2; \
       sed 's/^/  /' /opt/jupydo/apt-upgrades.txt >&2; fi \
- && rm -rf $V /var/cache/apt/archives/*.deb \
+ && find $V -mindepth 1 -maxdepth 1 ! -name debs -exec rm -rf {} + \
+ && rm -rf /var/cache/apt/archives/*.deb \
  && sh /usr/local/lib/jupydo/fix-ld-order.sh
 
 # ---- 2. Python + JupyterLab: ready-made tree (owned by root, so users cannot
@@ -129,17 +158,24 @@ RUN /opt/python4Jup/bin/python3 /tmp/register-kernels.py /tmp/jupydo-kernels.txt
  && rm -rf /tmp/vendor-r /tmp/register-kernels.py /tmp/jupydo-kernels.txt
 
 # ---- 4. Optional modules (JUPYDO_MODULES, e.g. "apptainer"): each one from its own
-# self-contained bundle (program + the system packages it needs); the base apt
-# bundle is not involved. ADD extracts Apptainer outside the container (works under
+# self-contained bundle (program + the system packages it needs). The base apt bundle
+# (kept in /tmp/vendor-apt/debs until here: its COPY layer exists anyway) is a second
+# source for them: if a module needs newer versions of packages the image has (e.g.
+# RStudio's libraries need a newer patch of the image's compilers), apt upgrades them
+# from it instead of removing them; it is deleted at the end of this step. ADD extracts Apptainer outside the container (works under
 # QEMU emulation too); with the module off the archive is empty.
 ARG JUPYDO_MODULES=""
 ADD selected/apptainer.tar.gz /opt/
 COPY selected/modules /tmp/jupydo-modules
 COPY modules /tmp/jupydo-module-scripts
-RUN for module in ${JUPYDO_MODULES}; do \
-      bash "/tmp/jupydo-module-scripts/install-${module}.sh" "/tmp/jupydo-modules/${module}" || exit 1; \
+RUN : > /opt/jupydo/modules-skipped.txt \
+ && for module in ${JUPYDO_MODULES}; do \
+      bash "/tmp/jupydo-module-scripts/install-${module}.sh" "/tmp/jupydo-modules/${module}" \
+      || { echo "WARNING: module ${module} left out: it cannot be added to this image without" \
+                "removing packages of the image (the rest of the environment is built)" >&2; \
+           echo "${module}" >> /opt/jupydo/modules-skipped.txt; }; \
     done \
- && rm -rf /tmp/jupydo-modules /tmp/jupydo-module-scripts \
+ && rm -rf /tmp/jupydo-modules /tmp/jupydo-module-scripts /tmp/vendor-apt \
  && sh /usr/local/lib/jupydo/fix-ld-order.sh
 ENV JUPYDO_MODULES="${JUPYDO_MODULES}"
 LABEL org.jupydo.modules="${JUPYDO_MODULES}"

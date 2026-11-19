@@ -19,11 +19,13 @@ fi
 # run-time packages from the bundle's own repository only (no internet)
 mkdir -p /tmp/apptainer-apt/state/partial
 echo "deb [trusted=yes] file:${BUNDLE}/debs ./" > /tmp/apptainer-apt/sources.list
+# the base apt bundle (same distribution), to upgrade instead of remove (see the Dockerfile)
+[ -d /tmp/vendor-apt/debs ] && echo "deb [trusted=yes] file:/tmp/vendor-apt/debs ./" >> /tmp/apptainer-apt/sources.list
 APT_ONLY_BUNDLE=(-o Dir::Etc::sourcelist=/tmp/apptainer-apt/sources.list -o Dir::Etc::sourceparts=-
                  -o Dir::State::Lists=/tmp/apptainer-apt/state -o APT::Get::List-Cleanup=0
                  -o APT::Default-Release=)   # some images set it (e.g. "testing"): unknown to the bundle
 apt-get "${APT_ONLY_BUNDLE[@]}" update
-apt-get "${APT_ONLY_BUNDLE[@]}" install -y --no-install-recommends --allow-downgrades \
+apt-get "${APT_ONLY_BUNDLE[@]}" install -y --no-install-recommends --allow-downgrades --no-remove \
   $(cat "${BUNDLE}/packages.txt")
 rm -rf /tmp/apptainer-apt
 
