@@ -220,10 +220,13 @@ run_modules_test() {  # $1 = base image, $2 = architecture, [$3 = modules, defau
     build=REFUSED   # no module for this platform (e.g. Ubuntu 16.04/18.04)
   elif MODULES="$mods" PLATFORM="linux/${arch}" scripts/build-image.sh "$base" "$tag" > "$log" 2>&1; then
     build=PASS; check=PASS
-    # a module left out on purpose (it would remove software of the image) is not a failure
+    # a module left out on purpose (adding it would remove software of the image) is a
+    # warning, never a failure: its own test is not run
+    left_out() { grep -q "WARN module $1 left out" "$log"; }
     for m in $mods; do grep -qE "^(OK   module ${m}|WARN module ${m} left out)" "$log" || check=FAIL; done
     case " $mods " in *" apptainer "*)
-      if [ "$arch" != "${HOST_ARCH:-amd64}" ]; then exec=N/A
+      if left_out apptainer; then exec=WARN
+      elif [ "$arch" != "${HOST_ARCH:-amd64}" ]; then exec=N/A
       elif docker run --rm "${plat[@]}" "${secure[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 "$tag" \
              bash -c 'cd /tmp && apptainer exec docker://alpine:3.20 cat /etc/alpine-release' >> "$log" 2>&1; then exec=PASS
       elif grep -q "\[install-apptainer\] the base image already has" "$log"; then
@@ -231,24 +234,27 @@ run_modules_test() {  # $1 = base image, $2 = architecture, [$3 = modules, defau
       else exec=FAIL; fi ;;
     esac
     case " $mods " in *" rstudio "*)
-      if grep -q "WARN module rstudio left out" "$log"; then rs=WARN
+      if left_out rstudio; then rs=WARN
       elif ! grep -q "found: R " "$log"; then rs=N/A
       elif docker run --rm "${plat[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 \
            -v "$(pwd)/scripts/lib/rstudio-smoke.py:/tmp/rstudio-smoke.py:ro" \
            "$tag" /opt/python4Jup/bin/python3 /tmp/rstudio-smoke.py >> "$log" 2>&1; then rs=PASS; else rs=FAIL; fi ;;
     esac
     case " $mods " in *" igv "*)
-      if docker run --rm "${plat[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 \
+      if left_out igv; then ig=WARN
+      elif docker run --rm "${plat[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 \
            -v "$(pwd)/scripts/lib/igv-smoke.py:/tmp/igv-smoke.py:ro" \
            "$tag" /opt/python4Jup/bin/python3 /tmp/igv-smoke.py >> "$log" 2>&1; then ig=PASS; else ig=FAIL; fi ;;
     esac
     case " $mods " in *" desktop "*)
-      if docker run --rm "${plat[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 \
+      if left_out desktop; then ds=WARN
+      elif docker run --rm "${plat[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 \
            -v "$(pwd)/scripts/lib/desktop-smoke.py:/tmp/desktop-smoke.py:ro" \
            "$tag" /opt/python4Jup/bin/python3 /tmp/desktop-smoke.py >> "$log" 2>&1; then ds=PASS; else ds=FAIL; fi ;;
     esac
     case " $mods " in *" vscode "*)
-      if docker run --rm "${plat[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 \
+      if left_out vscode; then vs=WARN
+      elif docker run --rm "${plat[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 \
            -v "$(pwd)/scripts/lib/vscode-smoke.py:/tmp/vscode-smoke.py:ro" \
            "$tag" /opt/python4Jup/bin/python3 /tmp/vscode-smoke.py >> "$log" 2>&1; then vs=PASS; else vs=FAIL; fi ;;
     esac
