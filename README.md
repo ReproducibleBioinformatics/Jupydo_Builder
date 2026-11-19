@@ -181,7 +181,6 @@ room for the images being tested (each one is removed after its test):
 git clone https://github.com/ReproducibleBioinformatics/Jupydo_Builder.git && cd Jupydo_Builder
 sudo scripts/setup-host.sh        # once: checks Docker, installs QEMU (the other architecture)
 scripts/get-vendor.sh             # the bundles from Zenodo (about 16 GB, checked, resumable)
-mkdir -p tests/archive && for d in tests/bigtest-*; do mv "$d" tests/archive/; done   # the published results: moved aside, or the run would skip every image
 tmux new -d -s big 'scripts/bigtest/run-all.sh lists/bigtest/bigtest-2026-10-27-amd64.tsv lists/bigtest/bigtest-2026-10-27-arm64.tsv; bash'
 ```
 
