@@ -16,6 +16,15 @@ RSERVER=/usr/lib/rstudio-server/bin/rserver
 
 if [ -x "$RSERVER" ] || command -v rserver >/dev/null 2>&1; then
   echo "[install-rstudio] the base image already has RStudio Server: kept as it is"
+  # Posit Workbench (the paid edition) starts only with a license: it is kept (replacing
+  # it would remove software of the image), and RStudio is reported as left out
+  # (its rserver has no --version: told by the package version, e.g. 2026.10.0+233.pro1,
+  # or by its license manager)
+  if dpkg-query -W -f '${Version}' rstudio-server 2>/dev/null | grep -q 'pro[0-9]' \
+     || [ -x /usr/lib/rstudio-server/bin/license-manager ]; then
+    echo "[install-rstudio] WARNING: it is Posit Workbench, which needs a license: RStudio left out"
+    echo rstudio >> /opt/jupydo/modules-skipped.txt
+  fi
 else
 # Never remove anything the image has (e.g. its compilers), and prefer the versions it
 # already has: the bundle only adds what is missing. If the module really needs newer
@@ -119,7 +128,9 @@ else
       n=1
       for r in "${ALL_R[@]:1}"; do
         n=$((n + 1))
-        v="$("$r" --slave -e 'cat(as.character(getRversion()))' 2>/dev/null || echo "?")"
+        # (last line only: some R print a warning on stdout first, e.g. about R_HOME)
+        v="$("$r" --slave -e 'cat(as.character(getRversion()))' 2>/dev/null | tail -n 1)"
+        [[ "$v" =~ ^[0-9][0-9.]*$ ]] || v="?"
         where="$(dirname "$(dirname "$r")")"
         echo "c.ServerProxy.servers.update({'rstudio-${n}': _jupydo_rstudio('${r}', 'rstudio-${n}', 'RStudio (R ${v}, ${where})')})"
         echo "[install-rstudio] RStudio (R ${v}, ${where}): ${r}" >&2

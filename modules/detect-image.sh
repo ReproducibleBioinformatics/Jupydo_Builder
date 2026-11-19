@@ -43,8 +43,10 @@ done
 for r in /usr/bin/R /usr/local/bin/R /opt/R/*/bin/R /opt/*/bin/R /opt/*/envs/*/bin/R; do
   [ -x "$r" ] || continue
   # ask R itself: for R-devel the first line of --version is "R Under development ..."
-  v=$("$r" --slave -e 'cat(as.character(getRversion()))' 2>/dev/null)
-  [ -n "$v" ] || continue
+  # (last line only: some R print a warning on stdout first, e.g. about R_HOME)
+  v=$("$r" --slave -e 'cat(as.character(getRversion()))' 2>/dev/null | tail -n 1)
+  case "$v" in [0-9]*) ;; *) continue ;; esac
+  case "$v" in *[!0-9.]*) continue ;; esac
   once "$r" || continue
   echo "R $r $v"
 done

@@ -46,6 +46,29 @@ apt-get "${APT_ONLY_BUNDLE[@]}" update
 bundle_install /tmp/desktop-apt $(cat "${BUNDLE}/packages.txt")
 rm -rf /tmp/desktop-apt
 command -v vncserver >/dev/null || { echo "ERROR: vncserver not found after the installation" >&2; exit 1; }
+# vncserver is a Perl script, and Perl stops when a folder of PERL5LIB/PERLLIB cannot be
+# read (some images point them into another user's home): vncserver gets only the
+# readable ones (the desktop session inherits them; the others were unusable anyway)
+VNC="$(command -v vncserver)"
+if [ ! -e "${VNC}.jupydo-real" ]; then
+  dpkg-divert --quiet --local --rename --divert "${VNC}.jupydo-real" --add "$VNC" 2>/dev/null \
+    || mv "$VNC" "${VNC}.jupydo-real"
+  cat > "$VNC" <<EOF_VNC
+#!/bin/sh
+# JupyDo: TigerVNC's vncserver (${VNC}.jupydo-real) with only the readable Perl library folders
+for var in PERL5LIB PERLLIB; do
+  eval "val=\\\${\$var:-}"
+  [ -n "\$val" ] || continue
+  keep=""
+  for d in \$(echo "\$val" | tr ':' ' '); do
+    [ -r "\$d" ] && keep="\${keep:+\$keep:}\$d"
+  done
+  if [ -n "\$keep" ]; then export "\$var=\$keep"; else unset "\$var"; fi
+done
+exec "${VNC}.jupydo-real" "\$@"
+EOF_VNC
+  chmod 755 "$VNC"
+fi
 
 # the launcher icon and the proxy, into JupyDo's Python (never the image's)
 /opt/python4Jup/bin/python3 -m pip install --quiet --disable-pip-version-check --no-index \
@@ -66,6 +89,10 @@ printf '%s\n' "# >>> JupyDo Desktop" "import os" \
   "os.environ.setdefault('XAUTHORITY', os.path.join(os.path.expanduser('~'), '.cache', 'Xauthority'))" \
   "os.environ.setdefault('ICEAUTHORITY', os.path.join(os.path.expanduser('~'), '.cache', 'ICEauthority'))" \
   "# <<< JupyDo Desktop" >> "$CONF"
+# D-Bus (the XFCE session) stops when the machine has no id: some images do not have one
+[ -s /etc/machine-id ] || dbus-uuidgen --ensure=/etc/machine-id 2>/dev/null \
+  || tr -d '-' < /proc/sys/kernel/random/uuid > /etc/machine-id
+[ -e /var/lib/dbus/machine-id ] || { mkdir -p /var/lib/dbus && ln -s /etc/machine-id /var/lib/dbus/machine-id; }
 # the user's files on the desktop
 ln -sfn /sharedFolder /home/jovyan/Desktop/sharedFolder
 echo "[install-desktop] XFCE + $(vncserver -version 2>&1 | grep -m1 -i vnc || echo TigerVNC)"
