@@ -172,6 +172,26 @@ the build removed (always `-`) and the JupyDo packages it left out. Results go t
 apart). `pin-test-images.sh` pins the test images to their digests, so the tests always
 run on the same images.
 
+### Running the large-scale test on a server
+
+On any Linux server with Docker (amd64 or arm64), with about 16 GB for the bundles plus
+room for the images being tested (each one is removed after its test):
+
+```bash
+git clone https://github.com/ReproducibleBioinformatics/Jupydo_Builder.git && cd Jupydo_Builder
+sudo scripts/setup-host.sh        # once: checks Docker, installs QEMU (the other architecture)
+scripts/get-vendor.sh             # the bundles from Zenodo (about 16 GB, checked, resumable)
+tmux new -d -s big 'scripts/bigtest/run-all.sh lists/bigtest/bigtest-2026-10-27-amd64.tsv lists/bigtest/bigtest-2026-10-27-arm64.tsv; bash'
+```
+
+It runs the list of the server's architecture natively, then the other list in emulation
+(`ONLY=native` or `ONLY=emulated` for one part only; `EMULATED_LIMIT=n` for the first n
+images of the emulated part). It can be stopped and started again: it goes on where it
+stopped. Follow it with `tmux attach -t big` (detach with Ctrl-b d); the results are in
+`tests/bigtest-<list arch>-on-<server arch>/big-results.tsv`, one row per image, with the
+build log of each image in `logs/` next to it. JupyDo, if installed on the same server, is
+not touched (test images are named `jupydo-test/...`), but shares the CPU, memory and disk.
+
 **Large-scale test** (`scripts/bigtest/`): `make-lists.py` builds, from public registries
 and with fixed rules, lists of the most used BioContainers, all StaPH-B images and the most
 pulled Docker Hub bioinformatics images, pinned by digest; `arch-survey.py` reports which

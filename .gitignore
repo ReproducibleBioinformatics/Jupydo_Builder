@@ -7,3 +7,5 @@ tests/logs/
 tests/archive/
 tests/*/logs/
 __pycache__/
+# also a link named vendor (e.g. to the bundles of another copy)
+vendor
