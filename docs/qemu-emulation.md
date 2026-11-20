@@ -5,20 +5,26 @@ versa) run under QEMU user-mode emulation. It works, but it is slower and has a 
 pitfalls. These are the ones found while building and testing the vendor bundles,
 and what the builder does about each.
 
-## 1. Setup: QEMU must be installed as a package
+## 1. Setup: always the same QEMU, registered at every boot
 
-An emulation enabled by hand (`docker run --privileged tonistiigi/binfmt --install
-arm64`) lives only in memory: it disappears at the next reboot. Install the
-`qemu-user-static` package (`scripts/setup-host.sh` does it), which registers QEMU
-again at every boot.
+The distributions' QEMU differs from machine to machine, and old versions crash on
+some programs: the QEMU 8.2 of Ubuntu 24.04 crashed ("QEMU internal SIGSEGV") on
+JupyDo's Python every time when emulating amd64 on an arm64 machine, and now and then
+in long R compilations when emulating arm64 on an amd64 one. So the builder does not
+use it: `scripts/setup-host.sh` takes the static QEMU of a pinned image
+(`tonistiigi/binfmt`, QEMU 10.2.3), keeps it in `/usr/local/lib/jupydo/qemu`, and a
+systemd service (`jupydo-qemu`, `scripts/lib/qemu-register.sh`) registers it at every
+boot in place of any QEMU the system registers (an emulation enabled by hand with
+`docker run --privileged tonistiigi/binfmt --install ...` lives only in memory and
+disappears at the next reboot). Every machine of a large-scale test then emulates with
+the same QEMU. Check with `head -3 /proc/sys/fs/binfmt_misc/qemu-aarch64` (on amd64) or
+`qemu-x86_64` (on arm64): interpreter `/usr/local/lib/jupydo/qemu/...`, flags `POCF`.
 
 ## 2. sudo inside emulated containers: the "C" flag
 
-By default QEMU is registered without the "C" (credentials) flag
-(`grep flags /proc/sys/fs/binfmt_misc/qemu-aarch64` shows e.g. `POF`). Without it,
-setuid programs such as `sudo` fail with "effective uid is not 0".
-`scripts/setup-host.sh` installs a systemd service (`jupydo-qemu-credentials`) that
-re-registers QEMU with the "C" flag at every boot (flags become e.g. `POFC`).
+Without the "C" (credentials) flag setuid programs such as `sudo` fail in emulated
+containers with "effective uid is not 0". The `jupydo-qemu` service registers QEMU
+with it (flags `POCF`; F makes the emulator work inside containers).
 `test-all.sh` runs sudo for real when the flag is there, and marks the result
 `PASS*` (sudo checked statically: setuid bit + the user's rule) when it is not.
 
@@ -36,39 +42,12 @@ asynchronous preemption. Seen with:
 
 ## 4. Old QEMU versions lack recent system calls
 
-The `tar` of Ubuntu 26.04 uses system calls that older QEMU versions do not
-implement: under the QEMU of Ubuntu/Pop!_OS 24.04 it fails with
-"Cannot open: Function not implemented" / "Cannot mkdir: Function not implemented".
-
-- The Dockerfile extracts archives with `ADD` (done by Docker itself, outside the
-  container) instead of running `tar` in the image: it works for every image.
-- The Apptainer bundles of the most recent distributions on arm64
-  (`ubuntu-26.04-arm64`, `debian-13-arm64`) need a newer QEMU: Ubuntu 26.04 because
-  of `tar` (Apptainer's own build scripts use it), Debian 13 because the Go compiler
-  hangs there even with GODEBUG=asyncpreemptoff=1 (0% CPU for hours). Build them
-  with a newer QEMU, registered only until the next reboot (about 55 minutes each):
-
-  ```bash
-  docker run --privileged --rm tonistiigi/binfmt --uninstall qemu-aarch64
-  docker run --privileged --rm tonistiigi/binfmt --install arm64
-  ARCHS=arm64 scripts/make-vendor-apptainer.sh ubuntu:26.04 debian:13
-  ```
-
-  Then go back to the system QEMU with the "C" flag (reboot, or):
-
-  ```bash
-  docker run --privileged --rm tonistiigi/binfmt --uninstall qemu-aarch64
-  sudo systemctl restart systemd-binfmt
-  sudo systemctl restart jupydo-qemu-credentials
-  ```
-
-  Do NOT restart `jupydo-qemu-credentials` while the temporary QEMU is registered:
-  it would try to register again an interpreter that no longer exists on disk, and
-  emulation would stop working until the next reboot.
-
-The same limitation applies to users' emulated environments based on Ubuntu 26.04
-(arm64 on amd64): commands like `tar` may fail there. Native machines are not
-affected (the kernel implements those calls).
+The `tar` of Ubuntu 26.04 uses system calls that older QEMU versions do not implement:
+under the QEMU of Ubuntu/Pop!_OS 24.04 it failed with "Cannot open: Function not
+implemented"; the Go compiler hung building Apptainer for Debian 13 arm64. The QEMU the
+builder installs (10.2.3, see 1) has those calls. The Dockerfile also extracts archives
+with `ADD` (done by Docker itself, outside the container) instead of running `tar` in
+the image.
 
 ## 5. Not emulation: Ubuntu 26.04 arm64 and the gold linker
 
@@ -102,14 +81,13 @@ works inside containers). `test-all.sh apptainer` marks emulated images N/A and 
 this case on the native ones. The arm64 Apptainer bundles are built and checked under emulation, but
 running them needs a real arm64 machine: test them there once.
 
-## 7. QEMU can crash by itself, now and then
+## 7. QEMU crashes: "QEMU internal SIGSEGV"
 
-During long, heavy work (e.g. compiling and loading R packages for 15 minutes) QEMU
-itself sometimes crashes: the build log shows
-`aarch64-binfmt-P: QEMU internal SIGSEGV` followed by `Segmentation fault`. It is not
-reproducible: the same build run again passes (seen once with posit/r-base:4.4-focal
-on arm64, which then passed). It cannot happen on a real arm64 machine. If a build
-under emulation fails with that message, just run it again.
+A build log with `x86_64-binfmt-P: QEMU internal SIGSEGV` or
+`aarch64-binfmt-P: QEMU internal SIGSEGV` (followed by `Segmentation fault`) means
+the distribution's QEMU is in use (its interpreter is under `/usr/libexec/qemu-binfmt/`),
+not the builder's: run `sudo scripts/setup-host.sh` again, then the test. It cannot
+happen on a real machine of that architecture.
 
 ## 8. Emulation is slow
 

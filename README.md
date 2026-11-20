@@ -97,9 +97,9 @@ PLATFORM=linux/arm64 scripts/build-image.sh ubuntu:24.04   # the other architect
 ```
 
 An image built by hand and one built by JupyDo are the same and interchangeable.
-`setup-host.sh` checks Docker, installs QEMU emulation with the boot-time fix that makes
-`sudo` work in emulated containers, and loads the Apptainer AppArmor profile; it can be
-run again at any time.
+`setup-host.sh` checks Docker, installs QEMU emulation (always the same QEMU, 10.2.3, on
+every machine, registered at every boot so that `sudo` works in emulated containers), and
+loads the Apptainer AppArmor profile; it can be run again at any time.
 
 ## The vendored bundles
 
