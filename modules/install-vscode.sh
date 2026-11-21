@@ -31,6 +31,15 @@ with tarfile.open(src) as tf:
     tf.extractall(dest, members=members, filter="fully_trusted")   # checksummed bundle
 PYEOF
 ln -sf /opt/code-server/bin/code-server /usr/local/bin/code-server
+# When it starts, code-server gives its own second process 10 seconds to answer (fixed in
+# its code): too little in emulated environments on a busy server, where it then stops
+# with "error timed out". Two minutes (JupyterLab itself waits up to five).
+WRAPPER=/opt/code-server/out/node/wrapper.js
+if grep -q '^const timeoutInterval = 10000;' "$WRAPPER"; then
+  sed -i 's/^const timeoutInterval = 10000;/const timeoutInterval = 120000;/' "$WRAPPER"
+else
+  echo "[install-vscode] WARNING: code-server's start-up time limit not found in ${WRAPPER}: left as it is" >&2
+fi
 
 DATA=/home/jovyan/.local/share/code-server
 mkdir -p "${DATA}/extensions" "${DATA}/User"
