@@ -76,7 +76,30 @@ alpine_archive() {  # $1 = architecture: prints the path of the saved image
       docker pull -q --platform "linux/$1" "$ALPINE_REF" >/dev/null 2>&1 && break
       sleep 30
     done
-    docker save --platform "linux/$1" -o "$f.part" "$ALPINE_REF" && chmod 644 "$f.part" && mv "$f.part" "$f"
+    docker save --platform "linux/$1" -o "$f.part" "$ALPINE_REF" || return 0
+    # some Docker versions add more entries (e.g. an attestation manifest) to the saved
+    # index, and Apptainer then cannot tell which image to open: only the image of this
+    # architecture is kept, so the file is the same whatever the Docker version
+    python3 - "$f.part" "$1" <<'PYEOF'
+import io, json, sys, tarfile
+path, arch = sys.argv[1:3]
+with tarfile.open(path) as t:
+    members = [(m, t.extractfile(m).read() if m.isfile() else None) for m in t.getmembers()]
+out = []
+for m, data in members:
+    if m.name == "index.json":
+        index = json.loads(data)
+        mans = index["manifests"]
+        if len(mans) > 1:
+            index["manifests"] = [x for x in mans if x.get("platform", {}).get("architecture") == arch] or mans[:1]
+        data = json.dumps(index).encode()
+        m.size = len(data)
+    out.append((m, data))
+with tarfile.open(path, "w") as t:
+    for m, data in out:
+        t.addfile(m, io.BytesIO(data) if data is not None else None)
+PYEOF
+    chmod 644 "$f.part" && mv "$f.part" "$f"
   fi
   echo "$f"
 }
