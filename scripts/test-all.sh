@@ -19,7 +19,7 @@
 #   scripts/test-all.sh real             only lists/test-images.txt
 #   scripts/test-all.sh apptainer        Apptainer module on every distro x ARCHS:
 #                                        build with the module, then a real unprivileged
-#                                        "apptainer exec docker://alpine" in a container
+#                                        "apptainer exec" of a saved alpine in a container
 #                                        started as JupyDo does (FUSE + the two security
 #                                        profiles; run scripts/setup-host.sh first), and
 #                                        a container of the other architecture (sandbox
@@ -63,6 +63,23 @@ printf 'image\tarch\tplatform\tbuild\tkernels\tpy_kernels\tr_kernels\tuser\tcomp
 HOST_ARCH="$(docker info --format '{{.Architecture}}' 2>/dev/null | sed 's/x86_64/amd64/; s/aarch64/arm64/')"
 
 read_list() { sed 's/#.*//' "$1" | awk 'NF {print $1}'; }
+
+# The small image the Apptainer tests open (alpine, pinned): downloaded once per run
+# and saved to a file that Apptainer reads (docker-archive:), so that the result does
+# not depend on the network (Docker Hub sometimes times out under load)
+ALPINE_REF="alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc"
+alpine_archive() {  # $1 = architecture: prints the path of the saved image
+  local f="${OUT}/.alpine-3.20-$1.tar" try
+  case "$f" in /*) ;; *) f="${ROOT}/${f}" ;; esac
+  if [ ! -s "$f" ]; then
+    for try in 1 2 3 4 5; do
+      docker pull -q --platform "linux/$1" "$ALPINE_REF" >/dev/null 2>&1 && break
+      sleep 30
+    done
+    docker save --platform "linux/$1" -o "$f.part" "$ALPINE_REF" && chmod 644 "$f.part" && mv "$f.part" "$f"
+  fi
+  echo "$f"
+}
 
 # QEMU registered with the "C" (credentials) flag runs setuid programs (sudo) too
 emulator_has_credentials() {  # $1 = architecture of the image
@@ -148,14 +165,16 @@ run_apptainer_test() {  # $1 = base image, $2 = architecture
     if [ "$arch" != "${HOST_ARCH:-amd64}" ]; then
       exec=N/A; other=N/A   # emulated: Apptainer cannot run under QEMU user-mode
     else
-      if docker run --rm "${plat[@]}" "${secure[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 "$tag" \
-           bash -c 'cd /tmp && apptainer exec docker://alpine:3.20 cat /etc/alpine-release' >> "$log" 2>&1; then
+      if docker run --rm "${plat[@]}" "${secure[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 \
+           -v "$(alpine_archive "$arch"):/tmp/alpine.tar:ro" "$tag" \
+           bash -c 'cd /tmp && apptainer exec docker-archive:/tmp/alpine.tar cat /etc/alpine-release' >> "$log" 2>&1; then
         exec=PASS; else exec=FAIL; fi
       # a container of the other architecture (its programs emulated by the kernel)
       local other_arch=arm64 expect=aarch64
       [ "$arch" = arm64 ] && { other_arch=amd64; expect=x86_64; }
-      if docker run --rm "${plat[@]}" "${secure[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 "$tag" \
-           bash -c "cd /tmp && apptainer build --arch ${other_arch} --fix-perms --sandbox /tmp/other docker://alpine:3.20 >&2 && apptainer exec /tmp/other uname -m" 2>>"$log" \
+      if docker run --rm "${plat[@]}" "${secure[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 \
+           -v "$(alpine_archive "$other_arch"):/tmp/alpine-other.tar:ro" "$tag" \
+           bash -c "cd /tmp && apptainer build --fix-perms --sandbox /tmp/other docker-archive:/tmp/alpine-other.tar >&2 && apptainer exec /tmp/other uname -m" 2>>"$log" \
            | tee -a "$log" | grep -qx "$expect"; then
         other=PASS; else other=FAIL; fi
     fi
@@ -227,8 +246,9 @@ run_modules_test() {  # $1 = base image, $2 = architecture, [$3 = modules, defau
     case " $mods " in *" apptainer "*)
       if left_out apptainer; then exec=WARN
       elif [ "$arch" != "${HOST_ARCH:-amd64}" ]; then exec=N/A
-      elif docker run --rm "${plat[@]}" "${secure[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 "$tag" \
-             bash -c 'cd /tmp && apptainer exec docker://alpine:3.20 cat /etc/alpine-release' >> "$log" 2>&1; then exec=PASS
+      elif docker run --rm "${plat[@]}" "${secure[@]}" -e NB_USER=jdtest -e NB_UID=10999 -e NB_GID=100 \
+             -v "$(alpine_archive "$arch"):/tmp/alpine.tar:ro" "$tag" \
+             bash -c 'cd /tmp && apptainer exec docker-archive:/tmp/alpine.tar cat /etc/alpine-release' >> "$log" 2>&1; then exec=PASS
       elif grep -q "\[install-apptainer\] the base image already has" "$log"; then
         exec=WARN   # the image's own Apptainer, as its authors set it up: kept as it is
       else exec=FAIL; fi ;;
