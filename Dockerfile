@@ -168,12 +168,22 @@ ARG JUPYDO_MODULES=""
 ADD selected/apptainer.tar.gz /opt/
 COPY selected/modules /tmp/jupydo-modules
 COPY modules /tmp/jupydo-module-scripts
-RUN : > /opt/jupydo/modules-skipped.txt \
+# A module that cannot be added without removing packages of the image (its script
+# exits with 100) is left out with a warning: modules-skipped.txt. A module whose
+# installation fails for any other reason is left out too (the rest of the environment
+# is built), but recorded apart as a failure: modules-failed.txt (jupydo-check, tests).
+RUN : > /opt/jupydo/modules-skipped.txt && : > /opt/jupydo/modules-failed.txt \
  && for module in ${JUPYDO_MODULES}; do \
-      bash "/tmp/jupydo-module-scripts/install-${module}.sh" "/tmp/jupydo-modules/${module}" \
-      || { echo "WARNING: module ${module} left out: it cannot be added to this image without" \
-                "removing packages of the image (the rest of the environment is built)" >&2; \
-           echo "${module}" >> /opt/jupydo/modules-skipped.txt; }; \
+      bash "/tmp/jupydo-module-scripts/install-${module}.sh" "/tmp/jupydo-modules/${module}"; rc=$?; \
+      if [ "$rc" = 100 ]; then \
+        echo "WARNING: module ${module} left out: it cannot be added to this image without" \
+             "removing packages of the image (the rest of the environment is built)" >&2; \
+        echo "${module}" >> /opt/jupydo/modules-skipped.txt; \
+      elif [ "$rc" != 0 ]; then \
+        echo "WARNING: module ${module} left out: its installation failed (exit ${rc}, see above;" \
+             "the rest of the environment is built)" >&2; \
+        echo "${module}" >> /opt/jupydo/modules-failed.txt; \
+      fi; \
     done \
  && rm -rf /tmp/jupydo-modules /tmp/jupydo-module-scripts /tmp/vendor-apt \
  && sh /usr/local/lib/jupydo/fix-ld-order.sh

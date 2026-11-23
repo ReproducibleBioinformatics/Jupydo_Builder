@@ -11,12 +11,16 @@ warn() { echo "WARN $1"; }
 # of JupyDo's apt bundle (apt-skipped.txt) and whole modules (modules-skipped.txt)
 SKIPPED_PKGS=" $(cat /opt/jupydo/apt-skipped.txt 2>/dev/null | tr '\n' ' ') "
 SKIPPED_MODS=" $(cat /opt/jupydo/modules-skipped.txt 2>/dev/null | tr '\n' ' ') "
+FAILED_MODS=" $(cat /opt/jupydo/modules-failed.txt 2>/dev/null | tr '\n' ' ') "
 MODS=""
 for m in ${JUPYDO_MODULES:-}; do
   case "$SKIPPED_MODS" in
-    *" $m "*) warn "module $m left out: it cannot be added to this image without removing packages of the image" ;;
-    *) MODS="$MODS $m" ;;
+    *" $m "*) warn "module $m left out: it cannot be added to this image without removing packages of the image"; continue ;;
   esac
+  case "$FAILED_MODS" in
+    *" $m "*) warn "module $m left out: its installation failed (see the build log)"; continue ;;
+  esac
+  MODS="$MODS $m"
 done
 
 if [ -x "$PY/python3" ]; then ok "python4Jup ($("$PY/python3" --version 2>&1))"; else ko "python4Jup missing ($PY/python3)"; fi

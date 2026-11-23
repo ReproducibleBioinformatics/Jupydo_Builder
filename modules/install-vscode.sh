@@ -30,6 +30,7 @@ with tarfile.open(src) as tf:
         members.append(m)
     tf.extractall(dest, members=members, filter="fully_trusted")   # checksummed bundle
 PYEOF
+mkdir -p /usr/local/bin   # missing in some images
 ln -sf /opt/code-server/bin/code-server /usr/local/bin/code-server
 # When it starts, code-server gives its own second process 10 seconds to answer (fixed in
 # its code): too little in emulated environments on a busy server, where it then stops

@@ -43,7 +43,8 @@ APT_ONLY_BUNDLE=(-o Dir::Etc::sourcelist=/tmp/desktop-apt/sources.list -o Dir::E
                  -o Dir::State::Lists=/tmp/desktop-apt/state -o APT::Get::List-Cleanup=0
                  -o APT::Default-Release=)   # some images set it (e.g. "testing"): unknown to the bundle
 apt-get "${APT_ONLY_BUNDLE[@]}" update
-bundle_install /tmp/desktop-apt $(cat "${BUNDLE}/packages.txt")
+# exit 100: it cannot be added without removing packages of the image (see the Dockerfile)
+bundle_install /tmp/desktop-apt $(cat "${BUNDLE}/packages.txt") || exit 100
 rm -rf /tmp/desktop-apt
 command -v vncserver >/dev/null || { echo "ERROR: vncserver not found after the installation" >&2; exit 1; }
 # vncserver is a Perl script, and Perl stops when a folder of PERL5LIB/PERLLIB cannot be

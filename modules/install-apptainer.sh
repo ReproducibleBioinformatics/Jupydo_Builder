@@ -25,12 +25,14 @@ APT_ONLY_BUNDLE=(-o Dir::Etc::sourcelist=/tmp/apptainer-apt/sources.list -o Dir:
                  -o Dir::State::Lists=/tmp/apptainer-apt/state -o APT::Get::List-Cleanup=0
                  -o APT::Default-Release=)   # some images set it (e.g. "testing"): unknown to the bundle
 apt-get "${APT_ONLY_BUNDLE[@]}" update
+# exit 100: it cannot be added without removing packages of the image (see the Dockerfile)
 apt-get "${APT_ONLY_BUNDLE[@]}" install -y --no-install-recommends --allow-downgrades --no-remove \
-  $(cat "${BUNDLE}/packages.txt")
+  $(cat "${BUNDLE}/packages.txt") || exit 100
 rm -rf /tmp/apptainer-apt
 
 # the program (extracted by the Dockerfile into /opt/apptainer)
 [ -x /opt/apptainer/bin/apptainer ] || { echo "ERROR: /opt/apptainer/bin/apptainer missing" >&2; exit 1; }
+mkdir -p /usr/local/bin   # missing in some images
 for program in /opt/apptainer/bin/*; do
   ln -sf "$program" "/usr/local/bin/$(basename "$program")"
 done

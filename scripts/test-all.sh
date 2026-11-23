@@ -264,8 +264,9 @@ run_modules_test() {  # $1 = base image, $2 = architecture, [$3 = modules, defau
     build=PASS; check=PASS
     # a module left out on purpose (adding it would remove software of the image) is a
     # warning, never a failure: its own test is not run
-    left_out() { grep -q "WARN module $1 left out" "$log"; }
-    for m in $mods; do grep -qE "^(OK   module ${m}|WARN module ${m} left out)" "$log" || check=FAIL; done
+    # (a module whose installation failed for any other reason is a failure)
+    left_out() { grep -q "WARN module $1 left out: it cannot be added" "$log"; }
+    for m in $mods; do grep -qE "^(OK   module ${m}|WARN module ${m} left out: it cannot be added)" "$log" || check=FAIL; done
     case " $mods " in *" apptainer "*)
       if left_out apptainer; then exec=WARN
       elif [ "$arch" != "${HOST_ARCH:-amd64}" ]; then exec=N/A

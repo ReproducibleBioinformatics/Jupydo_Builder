@@ -60,7 +60,8 @@ bundle_install() {   # bundle_install <apt dir> <package>...
                    -o Dir::State::Lists=/tmp/rstudio-apt/state -o APT::Get::List-Cleanup=0
                    -o APT::Default-Release=)   # some images set it (e.g. "testing"): unknown to the bundle
   apt-get "${APT_ONLY_BUNDLE[@]}" update
-  bundle_install /tmp/rstudio-apt $(cat "${BUNDLE}/packages.txt")
+  # exit 100: it cannot be added without removing packages of the image (see the Dockerfile)
+  bundle_install /tmp/rstudio-apt $(cat "${BUNDLE}/packages.txt") || exit 100
   rm -rf /tmp/rstudio-apt
   # a container has no init system: RStudio is started by JupyterLab, never as a service
   command -v systemctl >/dev/null 2>&1 && systemctl disable rstudio-server >/dev/null 2>&1 || true
