@@ -9,7 +9,7 @@ picks an image; it can also be used by hand.
 Everything the build installs comes from **vendored bundles** (`vendor/`), made once on
 the vendoring machine with the `make-vendor-*.sh` scripts and **published on Zenodo**
 (`scripts/publish-zenodo.py`), from where JupyDo's `first_start.sh` downloads them
-(current version: [10.5281/zenodo.24365831](https://doi.org/10.5281/zenodo.24365831)).
+(current version: [10.5281/zenodo.24498197](https://doi.org/10.5281/zenodo.24498197)).
 
 Developed by the **Reproducible Bioinformatics Lab**, University of Turin.
 
